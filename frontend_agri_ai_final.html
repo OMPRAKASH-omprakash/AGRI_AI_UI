@@ -101,14 +101,19 @@
             backdrop-filter: blur(5px);
             border-right: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .speaker-button {
-            position: absolute; bottom: 8px; right: 8px; background: #e5e7eb;
+        .ai-message-controls {
+            position: absolute; bottom: 8px; right: 8px;
+            display: flex;
+            gap: 4px;
+        }
+        .control-button {
+            background: #e5e7eb;
             border-radius: 50%; width: 28px; height: 28px;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; border: none;
             transition: background-color 0.2s;
         }
-        .speaker-button:hover { background-color: #d1d5db; }
+        .control-button:hover { background-color: #d1d5db; }
         
         #voice-modal { background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); }
         .voice-wave {
@@ -151,12 +156,39 @@
         }
         .info-card h3 {
             background: linear-gradient(120deg, #1e3a8a, #2563eb);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         #api-status-button {
             transition: all 0.3s ease;
         }
+        .message-content { padding-right: 4.5rem; /* Space for buttons */ }
+        .translate-popup {
+            position: absolute;
+            bottom: 40px;
+            right: 0;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            padding: 4px;
+            animation: popup-fade-in 0.2s ease-out;
+        }
+        @keyframes popup-fade-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .translate-popup button {
+            background: none;
+            border: none;
+            text-align: left;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .translate-popup button:hover { background-color: #f3f4f6; }
     </style>
 </head>
 <body class="p-4">
@@ -183,7 +215,7 @@
             <div class="flex-1 flex flex-col gap-4">
                  <div class="flex justify-between items-start">
                     <div class="text-center md:text-left">
-                        <h1 class="text-4xl font-bold" data-translate="title" style="background: linear-gradient(120deg, #1e3a8a, #2563eb, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Agri-Assistant</h1>
+                        <h1 class="text-4xl font-bold" data-translate="title" style="background: linear-gradient(120deg, #1e3a8a, #2563eb, #3b82f6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Agri-Assistant</h1>
                         <p id="user-id" class="text-sm font-medium mt-2 text-gray-500">Connecting...</p>
                     </div>
                     <button id="api-status-button" class="flex items-center gap-2 text-sm font-semibold text-gray-600 bg-white/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-md hover:shadow-lg hover:bg-gray-50">
@@ -220,19 +252,24 @@
             </div>
             <div class="w-full md:w-1/3 flex flex-col gap-4">
                 <div class="info-card bg-white p-4 rounded-2xl text-center">
+                    <p id="location-display" class="font-semibold text-lg text-blue-900 mb-1">Loading location...</p>
                     <p id="time-display" class="font-bold text-3xl text-blue-800"></p>
                     <p id="date-display" class="text-sm text-gray-600"></p>
                     <div id="weather-container" class="mt-4 pt-4 border-t border-gray-200 hidden">
-                        <div class="flex justify-around items-center text-gray-700">
-                            <div class="text-center">
-                                <div id="weather-icon" class="text-4xl animate-pulse"></div>
-                                <p id="weather-desc" class="text-sm font-medium"></p>
-                            </div>
-                            <div class="space-y-1 text-sm text-left">
-                                <p>💧 <strong data-translate="humidity">Humidity:</strong> <span id="humidity-display">--</span>%</p>
-                                <p>💨 <strong data-translate="wind">Wind:</strong> <span id="wind-display">--</span> km/h</p>
-                            </div>
-                        </div>
+                         <div class="flex justify-around items-center text-gray-700">
+                             <div class="text-center">
+                                 <div id="weather-icon" class="text-4xl animate-pulse"></div>
+                                 <p id="weather-desc" class="text-sm font-medium"></p>
+                             </div>
+                             <div class="text-center">
+                                 <p class="text-2xl font-bold" id="temp-c-display">--°C</p>
+                                 <p class="text-sm" id="temp-f-display">--°F</p>
+                             </div>
+                             <div class="space-y-1 text-sm text-left">
+                                 <p>💧 <strong data-translate="humidity">Humidity:</strong> <span id="humidity-display">--</span>%</p>
+                                 <p>💨 <strong data-translate="wind">Wind:</strong> <span id="wind-display">--</span> km/h</p>
+                             </div>
+                         </div>
                          <button id="get-location-button" class="mt-3 text-xs text-blue-600 hover:underline hidden">Allow location access for weather</button>
                     </div>
                 </div>
@@ -343,7 +380,8 @@
         // --- DOM Elements ---
         const DOMElements = {
             chatHistory: document.getElementById('chat-history'), userInput: document.getElementById('user-input'), sendButton: document.getElementById('send-button'), voiceButton: document.getElementById('voice-button'), languageSelect: document.getElementById('language-select'), voiceSelect: document.getElementById('voice-select'), deleteChatButton: document.getElementById('delete-chat-button'), loadingModal: document.getElementById('loading-modal'), customModal: document.getElementById('custom-modal'), modalTitle: document.getElementById('modal-title'), modalMessage: document.getElementById('modal-message'), modalOkButton: document.getElementById('modal-ok-button'), modalCancelButton: document.getElementById('modal-cancel-button'), newChatButton: document.getElementById('new-chat-button'), recentChatsList: document.getElementById('recent-chats-list'), searchChatsInput: document.getElementById('search-chats'), menuToggle: document.getElementById('menu-toggle'), sidebar: document.getElementById('sidebar'), deleteOptionsModal: document.getElementById('delete-options-modal'), deleteThisChatOptionButton: document.getElementById('delete-this-chat-option-button'), deleteAllChatsOptionButton: document.getElementById('delete-all-chats-option-button'), deleteOptionsCancelButton: document.getElementById('delete-options-cancel-button'), uploadButton: document.getElementById('upload-button'), imageUpload: document.getElementById('image-upload'), timeDisplay: document.getElementById('time-display'), dateDisplay: document.getElementById('date-display'), voiceModal: document.getElementById('voice-modal'), stopVoiceButton: document.getElementById('stop-voice-button'), getLocationButton: document.getElementById('get-location-button'), fileNameDisplay: document.getElementById('file-name-display'),
-            apiStatusButton: document.getElementById('api-status-button'), apiStatusIndicator: document.getElementById('api-status-indicator'), apiStatusText: document.getElementById('api-status-text')
+            apiStatusButton: document.getElementById('api-status-button'), apiStatusIndicator: document.getElementById('api-status-indicator'), apiStatusText: document.getElementById('api-status-text'),
+            locationDisplay: document.getElementById('location-display')
         };
         
         // --- UI Functions ---
@@ -384,16 +422,25 @@
         const addMessageToChat = (text, sender, imageUrl = null) => {
             const messageEl = document.createElement('div');
             messageEl.classList.add('message-box', sender === 'user' ? 'user-message' : 'ai-message');
+            messageEl.dataset.originalText = text; // Store original text for translation
             
             let content = sender === 'ai' ? parseMarkdown(text) : `<p>${text}</p>`;
-            let speakerButtonHTML = sender === 'ai' 
-                ? `<button class="speaker-button" data-text="${encodeURIComponent(text)}">
+            let controlsHTML = sender === 'ai' 
+                ? `<div class="ai-message-controls">
+                      <button class="control-button translate-button" title="Translate">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                           <path fill-rule="evenodd" d="M7 2a1 1 0 011.707-.707l3.586 3.586a1 1 0 010 1.414l-3.586 3.586A1 1 0 017 9V5a1 1 0 00-1-1H3a1 1 0 000 2h2v4a1 1 0 001 1h2a1 1 0 100-2H7V2z" clip-rule="evenodd" />
+                           <path d="M13 3a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 110-2h1V4a1 1 0 01-1-1h-.5a1 1 0 010-2H13zM4 11a1 1 0 011-1h5a1 1 0 110 2H5a1 1 0 01-1-1zM11 13a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM14 11a1 1 0 100 2h1a1 1 0 100-2h-1z" />
+                         </svg>
+                      </button>
+                      <button class="control-button speaker-button" data-text="${encodeURIComponent(text)}" title="Read aloud">
                          <svg class="play-icon h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
                          <svg class="stop-icon h-5 w-5 text-gray-600 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5 5h10v10H5V5z" /></svg>
-                      </button>` 
+                      </button>
+                   </div>`
                 : '';
             
-            messageEl.innerHTML = `<strong>${sender === 'user' ? 'You' : 'Agri-Assistant'}:</strong><div class="message-content pr-8">${content}</div>${speakerButtonHTML}`;
+            messageEl.innerHTML = `<strong>${sender === 'user' ? 'You' : 'Agri-Assistant'}:</strong><div class="message-content">${content}</div>${controlsHTML}`;
 
             if (imageUrl) {
                 const imgEl = document.createElement('img');
@@ -410,7 +457,7 @@
         const updateRealtimeInfo = () => {
             const now = new Date();
             const langCode = DOMElements.languageSelect.value;
-            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
             const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             
             try {
@@ -427,14 +474,17 @@
         const updateWeatherUI = (data) => {
             if (!data || !data.description) return;
             document.getElementById('weather-container').classList.remove('hidden');
+            DOMElements.locationDisplay.textContent = data.locationName || 'Current Location';
             document.getElementById('weather-icon').textContent = data.icon || '🌡️';
             document.getElementById('weather-desc').textContent = data.description;
+            document.getElementById('temp-c-display').textContent = `${data.temperatureCelsius}°C`;
+            document.getElementById('temp-f-display').textContent = `${data.temperatureFahrenheit}°F`;
             document.getElementById('humidity-display').textContent = data.humidity;
             document.getElementById('wind-display').textContent = data.windSpeed;
         };
         
         const fetchWeatherData = async (lat, lon) => {
-            const prompt = `Based on the latest Google Weather data for latitude ${lat} and longitude ${lon}, provide ONLY a JSON object with the current weather. The JSON object must have these exact keys: "description" (a short string like "Sunny", "Partly Cloudy"), "humidity" (integer), "windSpeed" (integer in km/h), and "icon" (a single appropriate emoji like '☀️', '☁️', '🌧️'). Do not include any other text or markdown formatting.`;
+            const prompt = `Based on the latest Google Weather data for latitude ${lat} and longitude ${lon}, provide ONLY a JSON object with the current weather. The JSON object must have these exact keys: "locationName" (string, e.g., "Mountain View, CA"), "description" (string, e.g., "Sunny"), "temperatureCelsius" (integer), "temperatureFahrenheit" (integer), "humidity" (integer), "windSpeed" (integer, in km/h), and "icon" (a single appropriate emoji, e.g., '☀️', '☁️', '🌧️'). Do not include any other text or markdown formatting.`;
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
 
@@ -448,6 +498,7 @@
                 updateWeatherUI(weatherData);
             } catch (error) {
                 console.error("Failed to fetch or parse weather data:", error);
+                DOMElements.locationDisplay.textContent = "Weather unavailable";
             }
         };
 
@@ -460,6 +511,7 @@
                      },
                      () => {
                          DOMElements.getLocationButton.classList.remove('hidden');
+                         DOMElements.locationDisplay.textContent = "Location access needed";
                          console.log("User denied geolocation.");
                      }
                  );
@@ -595,6 +647,8 @@
             saveChatHistory();
             showLoading(true);
             
+            const selectedLanguage = DOMElements.languageSelect.options[DOMElements.languageSelect.selectedIndex].text;
+
             const geminiPayload = localChatHistory.map(msg => ({
                 role: msg.sender === 'user' ? 'user' : 'model',
                 parts: [{ text: msg.text }]
@@ -604,14 +658,14 @@
 **PRIMARY DIRECTIVE:** You ONLY answer questions related to agriculture. This includes topics like weather patterns, crop cycles, seed varieties, organic and chemical pesticides, land area calculations (acres, hectares), pond water management, irrigation techniques (drip, sprinkler, etc.), soil health, terrace farming, and general land farming.
 - If the user asks a non-agricultural question, you MUST respond with: "I can only assist with agriculture-related queries. How can I help you with your farming needs today?"
 **LANGUAGE HANDLING:**
-1.  **Detect & Respond:** Automatically detect the language of the user's most recent query. Your entire response, including any follow-up questions, MUST be in that same language.
-2.  **Language Change Command:** If the user explicitly asks you to switch languages (e.g., "speak in tamil", "answer in hindi"), you must acknowledge the request in the new language and use it for all subsequent responses until asked to change again.
+- The user has selected their preferred language as **${selectedLanguage}**. 
+- You MUST provide your entire response in **${selectedLanguage}**, regardless of the language of the user's query.
 **RESPONSE GUIDELINES:**
 - **Accuracy:** Provide specific, accurate information for any recommendations.
 - **Pesticide Safety:** When recommending pesticides, ALWAYS include active ingredients, dosage, and safety warnings.
 - **Formatting:** Use Markdown for clarity ('### Title', '* ' for bullets, '**bold**').
 - **Practicality:** Give actionable, step-by-step advice.
-- **Engage:** Conclude with a relevant follow-up question.`;
+- **Engage:** Conclude with a relevant follow-up question in ${selectedLanguage}.`;
 
             const payload = { 
                 contents: geminiPayload, 
@@ -707,25 +761,17 @@
             speechVoices = speechSynthesis.getVoices();
             DOMElements.voiceSelect.innerHTML = '';
             
-            let maleCounter = 1;
-            let femaleCounter = 1;
+            const funkyNames = ['Nova', 'Orion', 'Lyra', 'Cove', 'Juno', 'Echo', 'Breeze', 'Axel', 'Vega', 'Zion'];
+            let nameIndex = 0;
 
             speechVoices
                 .filter(voice => voice.lang.startsWith('en') || voice.lang.startsWith('hi') || voice.lang.startsWith('ta') || voice.lang.startsWith('ml'))
                 .forEach(voice => {
                     const option = document.createElement('option');
-                    option.textContent = voice.name;
+                    option.textContent = `${funkyNames[nameIndex % funkyNames.length]} (${voice.lang})`;
                     option.value = voice.name;
-
-                    if (voice.name.toLowerCase().includes('female') || voice.gender === 'female') {
-                        option.textContent = `Soft Female Voice ${femaleCounter++}`;
-                    } else if (voice.name.toLowerCase().includes('male') || voice.gender === 'male') {
-                        option.textContent = `Gentle Male Voice ${maleCounter++}`;
-                    } else {
-                        option.textContent = `Voice ${maleCounter + femaleCounter -1}`;
-                    }
-
                     DOMElements.voiceSelect.appendChild(option);
+                    nameIndex++;
                 });
         };
 
@@ -748,7 +794,7 @@
             currentUtterance.lang = lang;
             
             const selectedVoiceName = DOMElements.voiceSelect.value;
-            const voice = speechVoices.find(v => v.name === selectedVoiceName && v.lang.startsWith(lang.split('-')[0])) || speechVoices.find(v => v.lang.startsWith(lang.split('-')[0]));
+            const voice = speechVoices.find(v => v.name === selectedVoiceName);
 
             if (voice) {
                 currentUtterance.voice = voice;
@@ -776,6 +822,77 @@
                  };
             }
             speechSynthesis.speak(currentUtterance);
+        };
+
+        // --- In-Chat Translation ---
+        const translateMessage = async (messageEl, targetLangCode, targetLangName) => {
+            showLoading(true);
+            const originalText = messageEl.dataset.originalText;
+            const prompt = `Translate the following text to ${targetLangName}. Provide ONLY the translation, with no extra commentary or explanations:\n\n"${originalText}"`;
+            
+            const payload = { contents: [{ parts: [{ text: prompt }] }] };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error('Translation API call failed');
+
+                const result = await response.json();
+                const translatedText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (translatedText) {
+                    const contentDiv = messageEl.querySelector('.message-content');
+                    const speakerButton = messageEl.querySelector('.speaker-button');
+                    contentDiv.innerHTML = parseMarkdown(translatedText);
+                    if (speakerButton) {
+                        speakerButton.dataset.text = encodeURIComponent(translatedText);
+                    }
+                } else {
+                    showModal("Translation Error", "Could not translate the message.");
+                }
+            } catch (error) {
+                console.error("Translation failed:", error);
+                showModal("Translation Error", `Failed to translate: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        };
+
+        const showLanguageSelector = (button) => {
+            // Close any existing popups
+            document.querySelectorAll('.translate-popup').forEach(p => p.remove());
+
+            const messageEl = button.closest('.message-box');
+            const popup = document.createElement('div');
+            popup.className = 'translate-popup';
+
+            const languages = [
+                { code: 'en-US', name: 'English' },
+                { code: 'ta-IN', name: 'Tamil' },
+                { code: 'hi-IN', name: 'Hindi' },
+                { code: 'ml-IN', name: 'Malayalam' },
+            ];
+
+            languages.forEach(lang => {
+                const langButton = document.createElement('button');
+                langButton.textContent = lang.name;
+                langButton.onclick = () => {
+                    translateMessage(messageEl, lang.code, lang.name);
+                    popup.remove();
+                };
+                popup.appendChild(langButton);
+            });
+
+            messageEl.appendChild(popup);
+
+            // Add event listener to close popup when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', (e) => {
+                    if (!popup.contains(e.target) && e.target !== button) {
+                        popup.remove();
+                    }
+                }, { once: true });
+            }, 0);
         };
 
         // --- Event Listeners ---
@@ -839,7 +956,14 @@
         });
         DOMElements.chatHistory.addEventListener('click', (e) => {
             const speakerButton = e.target.closest('.speaker-button');
-            if (speakerButton) speakText(decodeURIComponent(speakerButton.dataset.text), speakerButton);
+            if (speakerButton) {
+                speakText(decodeURIComponent(speakerButton.dataset.text), speakerButton);
+                return;
+            }
+            const translateButton = e.target.closest('.translate-button');
+            if (translateButton) {
+                showLanguageSelector(translateButton);
+            }
         });
         DOMElements.recentChatsList.addEventListener('contextmenu', (e) => {
             e.preventDefault();
@@ -862,7 +986,7 @@
         DOMElements.languageSelect.value = savedLang;
         updateLanguage(savedLang);
         updateRealtimeInfo();
-        setInterval(updateRealtimeInfo, 60000);
+        setInterval(updateRealtimeInfo, 1000);
         
         // Load speech synthesis voices, which can be asynchronous
         loadVoices();
@@ -878,4 +1002,3 @@
     </script>
 </body>
 </html>
-
