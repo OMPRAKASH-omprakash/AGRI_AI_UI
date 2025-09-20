@@ -154,6 +154,9 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+        #api-status-button {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body class="p-4">
@@ -178,9 +181,15 @@
             </button>
 
             <div class="flex-1 flex flex-col gap-4">
-                <div class="text-center md:text-left">
-                    <h1 class="text-4xl font-bold" data-translate="title" style="background: linear-gradient(120deg, #1e3a8a, #2563eb, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Agri-Assistant</h1>
-                    <p id="user-id" class="text-sm font-medium mt-2 text-gray-500">Connecting...</p>
+                 <div class="flex justify-between items-start">
+                    <div class="text-center md:text-left">
+                        <h1 class="text-4xl font-bold" data-translate="title" style="background: linear-gradient(120deg, #1e3a8a, #2563eb, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Agri-Assistant</h1>
+                        <p id="user-id" class="text-sm font-medium mt-2 text-gray-500">Connecting...</p>
+                    </div>
+                    <button id="api-status-button" class="flex items-center gap-2 text-sm font-semibold text-gray-600 bg-white/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-md hover:shadow-lg hover:bg-gray-50">
+                        <span id="api-status-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></span>
+                        <span id="api-status-text">Checking API...</span>
+                    </button>
                 </div>
                 <div class="chat-container flex flex-col p-4 flex-1 overflow-hidden">
                     <div id="chat-history" class="flex-1 overflow-y-auto pr-4 mb-4 space-y-4"></div>
@@ -191,6 +200,7 @@
                             <option value="hi-IN" data-translate="lang_hi">हिंदी</option>
                             <option value="ta-IN" data-translate="lang_ta">தமிழ்</option>
                         </select>
+                         <select id="voice-select" class="p-2 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-400 transition"></select>
                         <input type="text" id="user-input" data-translate-placeholder="type_query_placeholder" placeholder="Type your query..." class="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                         <button id="voice-button" class="p-3 rounded-full hover:bg-blue-100 transition-colors">
                            <svg class="mic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: #1e40af;"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.5-3c0 3.53-2.64 6.44-6.07 6.94V21h-2.87v-3.06c-3.43-.5-6.07-3.41-6.07-6.94h2c0 2.91 2.37 5.26 5.29 5.26S15.5 13.91 15.5 11h2z"/></svg>
@@ -293,14 +303,15 @@
 
 
     <script type="module">
-        // Replace "YOUR_GEMINI_API_KEY" with your actual Gemini API key.
-        const geminiApiKey = "AIzaSyBFgeMHT50ifwwhE-G0-o68KZ3e5Rm9jBo";
+        // The API key is provided automatically by the environment.
+        const geminiApiKey = "AIzaSyD3F33tYLAlpIQ2g64T2yhCGRm8c5GlU9o";
 
         // --- Global Variables ---
         let userId, currentChatId = null, modalAction = null;
         let localChatHistory = [];
         let currentUtterance = null;
         let isVoiceInteraction = false;
+        let speechVoices = [];
 
         // --- Local Storage & User ID Management ---
         const getUserId = () => {
@@ -331,7 +342,8 @@
 
         // --- DOM Elements ---
         const DOMElements = {
-            chatHistory: document.getElementById('chat-history'), userInput: document.getElementById('user-input'), sendButton: document.getElementById('send-button'), voiceButton: document.getElementById('voice-button'), languageSelect: document.getElementById('language-select'), deleteChatButton: document.getElementById('delete-chat-button'), loadingModal: document.getElementById('loading-modal'), customModal: document.getElementById('custom-modal'), modalTitle: document.getElementById('modal-title'), modalMessage: document.getElementById('modal-message'), modalOkButton: document.getElementById('modal-ok-button'), modalCancelButton: document.getElementById('modal-cancel-button'), newChatButton: document.getElementById('new-chat-button'), recentChatsList: document.getElementById('recent-chats-list'), searchChatsInput: document.getElementById('search-chats'), menuToggle: document.getElementById('menu-toggle'), sidebar: document.getElementById('sidebar'), deleteOptionsModal: document.getElementById('delete-options-modal'), deleteThisChatOptionButton: document.getElementById('delete-this-chat-option-button'), deleteAllChatsOptionButton: document.getElementById('delete-all-chats-option-button'), deleteOptionsCancelButton: document.getElementById('delete-options-cancel-button'), uploadButton: document.getElementById('upload-button'), imageUpload: document.getElementById('image-upload'), timeDisplay: document.getElementById('time-display'), dateDisplay: document.getElementById('date-display'), voiceModal: document.getElementById('voice-modal'), stopVoiceButton: document.getElementById('stop-voice-button'), getLocationButton: document.getElementById('get-location-button'), fileNameDisplay: document.getElementById('file-name-display')
+            chatHistory: document.getElementById('chat-history'), userInput: document.getElementById('user-input'), sendButton: document.getElementById('send-button'), voiceButton: document.getElementById('voice-button'), languageSelect: document.getElementById('language-select'), voiceSelect: document.getElementById('voice-select'), deleteChatButton: document.getElementById('delete-chat-button'), loadingModal: document.getElementById('loading-modal'), customModal: document.getElementById('custom-modal'), modalTitle: document.getElementById('modal-title'), modalMessage: document.getElementById('modal-message'), modalOkButton: document.getElementById('modal-ok-button'), modalCancelButton: document.getElementById('modal-cancel-button'), newChatButton: document.getElementById('new-chat-button'), recentChatsList: document.getElementById('recent-chats-list'), searchChatsInput: document.getElementById('search-chats'), menuToggle: document.getElementById('menu-toggle'), sidebar: document.getElementById('sidebar'), deleteOptionsModal: document.getElementById('delete-options-modal'), deleteThisChatOptionButton: document.getElementById('delete-this-chat-option-button'), deleteAllChatsOptionButton: document.getElementById('delete-all-chats-option-button'), deleteOptionsCancelButton: document.getElementById('delete-options-cancel-button'), uploadButton: document.getElementById('upload-button'), imageUpload: document.getElementById('image-upload'), timeDisplay: document.getElementById('time-display'), dateDisplay: document.getElementById('date-display'), voiceModal: document.getElementById('voice-modal'), stopVoiceButton: document.getElementById('stop-voice-button'), getLocationButton: document.getElementById('get-location-button'), fileNameDisplay: document.getElementById('file-name-display'),
+            apiStatusButton: document.getElementById('api-status-button'), apiStatusIndicator: document.getElementById('api-status-indicator'), apiStatusText: document.getElementById('api-status-text')
         };
         
         // --- UI Functions ---
@@ -339,7 +351,7 @@
         const showModal = (title, message, showCancelButton = false) => {
             const modalHeader = document.getElementById('modal-header');
             DOMElements.modalTitle.textContent = title;
-            DOMElements.modalMessage.textContent = message;
+            DOMElements.modalMessage.innerHTML = message; // Use innerHTML to allow links
             DOMElements.modalCancelButton.style.display = showCancelButton ? 'inline-block' : 'none';
             
             const isDeleteAction = modalAction && modalAction.toLowerCase().includes('delete');
@@ -398,8 +410,18 @@
         const updateRealtimeInfo = () => {
             const now = new Date();
             const langCode = DOMElements.languageSelect.value;
-            DOMElements.timeDisplay.textContent = now.toLocaleTimeString(langCode.split('-')[0], { hour: '2-digit', minute: '2-digit' });
-            DOMElements.dateDisplay.textContent = now.toLocaleDateString(langCode.split('-')[0], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            
+            try {
+                 DOMElements.timeDisplay.textContent = new Intl.DateTimeFormat(langCode, timeOptions).format(now);
+                 DOMElements.dateDisplay.textContent = new Intl.DateTimeFormat(langCode, dateOptions).format(now);
+            } catch (e) {
+                console.error("Could not format date/time for locale:", langCode, e);
+                // Fallback to English for unsupported locales
+                DOMElements.timeDisplay.textContent = new Intl.DateTimeFormat('en-US', timeOptions).format(now);
+                DOMElements.dateDisplay.textContent = new Intl.DateTimeFormat('en-US', dateOptions).format(now);
+            }
         };
         
         const updateWeatherUI = (data) => {
@@ -410,12 +432,8 @@
             document.getElementById('humidity-display').textContent = data.humidity;
             document.getElementById('wind-display').textContent = data.windSpeed;
         };
-
+        
         const fetchWeatherData = async (lat, lon) => {
-            if (!geminiApiKey || geminiApiKey.startsWith("YOUR")) {
-                console.error("Gemini API key is missing. Cannot fetch weather.");
-                return;
-            }
             const prompt = `Based on the latest Google Weather data for latitude ${lat} and longitude ${lon}, provide ONLY a JSON object with the current weather. The JSON object must have these exact keys: "description" (a short string like "Sunny", "Partly Cloudy"), "humidity" (integer), "windSpeed" (integer in km/h), and "icon" (a single appropriate emoji like '☀️', '☁️', '🌧️'). Do not include any other text or markdown formatting.`;
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
@@ -509,7 +527,6 @@
             
             saveAllChatsToStorage(allChats);
             loadRecentChats(); // Refresh the sidebar
-            // Ensure the current chat is highlighted
             document.querySelectorAll('#recent-chats-list button').forEach(btn => {
                  btn.classList.toggle('bg-blue-200', btn.dataset.chatId === currentChatId);
                  btn.classList.toggle('font-semibold', btn.dataset.chatId === currentChatId);
@@ -551,18 +568,31 @@
             startNewChat();
         };
 
+        const handleApiError = async (response) => {
+            const errorData = await response.json();
+            const errorMessage = errorData.error?.message || 'An unknown error occurred.';
+            DOMElements.apiStatusIndicator.classList.remove('bg-yellow-500', 'animate-pulse', 'bg-green-500');
+            DOMElements.apiStatusIndicator.classList.add('bg-red-500');
+            DOMElements.apiStatusText.textContent = 'API Error';
+
+            if (response.status === 429 || errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('billing')) {
+                 showModal(
+                    "Billing & Quota Issue",
+                    `Your Google Cloud project's billing account is not configured correctly, or you have exceeded the API usage quota. Please verify that your project is linked to an active billing account.<br><br><a href="https://console.cloud.google.com/billing" target="_blank" class="text-blue-600 underline font-bold">Fix Billing & Manage Quotas</a>`,
+                    false
+                );
+            } else {
+                showModal("API Error", `An error occurred: ${errorMessage} <br><br> <a href="https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini" target="_blank" class="text-blue-600 underline">Learn More</a>`);
+            }
+        };
+
         // --- Core API Call Logic ---
         const handleTextQuery = async (query) => {
             if (!query.trim()) return;
-            if (!geminiApiKey || geminiApiKey === 'YOUR_GEMINI_API_KEY') {
-                showModal("API Key Error", "Gemini API key is missing. Please add it to the script.", false);
-                return;
-            }
             
             addMessageToChat(query, 'user');
             localChatHistory.push({ text: query, sender: 'user'});
             saveChatHistory();
-
             showLoading(true);
             
             const geminiPayload = localChatHistory.map(msg => ({
@@ -570,20 +600,22 @@
                 parts: [{ text: msg.text }]
             }));
             
-            const systemPrompt = `You are Friday, a specialized AI Agri-Assistant. Your knowledge is grounded in real-time, verifiable agricultural data.
-**PRIMARY DIRECTIVE:** You ONLY answer questions related to agriculture, farming, gardening, crop science, pest control, soil health, and related topics.
-- If the user asks a non-agricultural question (e.g., about history, movies, coding, general chit-chat), you MUST respond with: "I can only assist with agriculture-related queries. How can I help you with your farming needs today?" in the user's language.
+            const systemPrompt = `You are Friday, a specialized AI Agri-Assistant. 
+**PRIMARY DIRECTIVE:** You ONLY answer questions related to agriculture. This includes topics like weather patterns, crop cycles, seed varieties, organic and chemical pesticides, land area calculations (acres, hectares), pond water management, irrigation techniques (drip, sprinkler, etc.), soil health, terrace farming, and general land farming.
+- If the user asks a non-agricultural question, you MUST respond with: "I can only assist with agriculture-related queries. How can I help you with your farming needs today?"
+**LANGUAGE HANDLING:**
+1.  **Detect & Respond:** Automatically detect the language of the user's most recent query. Your entire response, including any follow-up questions, MUST be in that same language.
+2.  **Language Change Command:** If the user explicitly asks you to switch languages (e.g., "speak in tamil", "answer in hindi"), you must acknowledge the request in the new language and use it for all subsequent responses until asked to change again.
 **RESPONSE GUIDELINES:**
-1.  **Accuracy is Paramount:** For any recommendations (pesticides, fertilizers, farming techniques), provide specific, accurate information.
-2.  **Pesticide Safety:** When recommending pesticides (both organic and chemical), ALWAYS include: The specific active ingredient, clear dosage and application instructions, and a strong warning about safety precautions (e.g., wearing protective gear).
-3.  **Formatting:** Use Markdown for clarity ('### Title', '* ' for bullet points, '**bold**'). NEVER use long, unbroken paragraphs.
-4.  **Practicality:** Give actionable, step-by-step advice.
-5.  **Language:** Respond ONLY in ${DOMElements.languageSelect.options[DOMElements.languageSelect.selectedIndex].text}.
-6.  **Engage:** Always conclude your response with a relevant follow-up question.`;
+- **Accuracy:** Provide specific, accurate information for any recommendations.
+- **Pesticide Safety:** When recommending pesticides, ALWAYS include active ingredients, dosage, and safety warnings.
+- **Formatting:** Use Markdown for clarity ('### Title', '* ' for bullets, '**bold**').
+- **Practicality:** Give actionable, step-by-step advice.
+- **Engage:** Conclude with a relevant follow-up question.`;
 
             const payload = { 
                 contents: geminiPayload, 
-                tools: [{ "google_search": {} }],
+                tools: [{ "google_search_retrieval": {} }],
                 systemInstruction: { parts: [{ text: systemPrompt }] } 
             };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
@@ -591,8 +623,8 @@
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`API Error: ${errorData.error.message}`);
+                    await handleApiError(response);
+                    return;
                 }
                 const result = await response.json();
                 const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -608,13 +640,10 @@
             } catch (error) { showModal("Error", `Failed to get a response: ${error.message}`); } 
             finally { showLoading(false); }
         };
+
         const handleImageAnalysis = async (base64ImageData) => { 
-            if (!geminiApiKey || geminiApiKey === 'YOUR_GEMINI_API_KEY') {
-                showModal("API Key Error", "Gemini API key is missing. Please add it to the script.", false);
-                return;
-            }
             showLoading(true);
-            const prompt = "Analyze this agricultural image. Identify any visible plant diseases, pests, or nutrient deficiencies. If a problem is identified, suggest organic and chemical pesticide recommendations with dosages. If it's not an agricultural image, state that you can only analyze farming-related pictures.";
+            const prompt = `Analyze this agricultural image. Identify any visible plant diseases, pests, or nutrient deficiencies. If a problem is identified, suggest organic and chemical pesticide recommendations with dosages. If it's not an agricultural image, state that you can only analyze farming-related pictures. Respond in the language of the user's UI, which is set to ${DOMElements.languageSelect.options[DOMElements.languageSelect.selectedIndex].text}.`;
             addMessageToChat("Analyzing your image...", 'user', base64ImageData);
             localChatHistory.push({ text: "Analyzing your image...", sender: 'user', imageUrl: base64ImageData });
 
@@ -625,7 +654,10 @@
 
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                if (!response.ok) {
+                    await handleApiError(response);
+                    return;
+                }
                 const result = await response.json();
                 const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
                  if (text) {
@@ -636,6 +668,30 @@
             } catch (error) { showModal("Error", `Image analysis failed: ${error.message}`); }
             finally { showLoading(false); }
            };
+
+        const checkApiStatus = async () => {
+            DOMElements.apiStatusIndicator.classList.remove('bg-green-500', 'bg-red-500');
+            DOMElements.apiStatusIndicator.classList.add('bg-yellow-500', 'animate-pulse');
+            DOMElements.apiStatusText.textContent = 'Checking API...';
+
+            // A simple, low-cost API call to check for authentication and billing.
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`;
+            try {
+                const response = await fetch(apiUrl);
+                if (response.ok) {
+                    DOMElements.apiStatusIndicator.classList.remove('bg-yellow-500', 'animate-pulse', 'bg-red-500');
+                    DOMElements.apiStatusIndicator.classList.add('bg-green-500');
+                    DOMElements.apiStatusText.textContent = 'API Connected';
+                } else {
+                    await handleApiError(response);
+                }
+            } catch (error) {
+                DOMElements.apiStatusIndicator.classList.remove('bg-yellow-500', 'animate-pulse', 'bg-green-500');
+                DOMElements.apiStatusIndicator.classList.add('bg-red-500');
+                DOMElements.apiStatusText.textContent = 'API Error';
+                showModal('Network Error', `Could not connect to the API. Check your internet connection.`);
+            }
+        };
         
         // --- Voice Synthesis and Recognition ---
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -647,6 +703,32 @@
         recognition.addEventListener('end', () => DOMElements.voiceModal.classList.add('hidden'));
         recognition.addEventListener('error', (e) => showModal('Voice Error', `Recognition error: ${e.error}`));
         
+        const loadVoices = () => {
+            speechVoices = speechSynthesis.getVoices();
+            DOMElements.voiceSelect.innerHTML = '';
+            
+            let maleCounter = 1;
+            let femaleCounter = 1;
+
+            speechVoices
+                .filter(voice => voice.lang.startsWith('en') || voice.lang.startsWith('hi') || voice.lang.startsWith('ta') || voice.lang.startsWith('ml'))
+                .forEach(voice => {
+                    const option = document.createElement('option');
+                    option.textContent = voice.name;
+                    option.value = voice.name;
+
+                    if (voice.name.toLowerCase().includes('female') || voice.gender === 'female') {
+                        option.textContent = `Soft Female Voice ${femaleCounter++}`;
+                    } else if (voice.name.toLowerCase().includes('male') || voice.gender === 'male') {
+                        option.textContent = `Gentle Male Voice ${maleCounter++}`;
+                    } else {
+                        option.textContent = `Voice ${maleCounter + femaleCounter -1}`;
+                    }
+
+                    DOMElements.voiceSelect.appendChild(option);
+                });
+        };
+
         const speakText = (text, button) => {
             if (speechSynthesis.speaking) {
                 speechSynthesis.cancel();
@@ -657,7 +739,22 @@
             }
             
             currentUtterance = new SpeechSynthesisUtterance(text);
-            currentUtterance.lang = DOMElements.languageSelect.value;
+            
+            let lang = 'en-US'; // Default
+            if (/[\u0900-\u097F]/.test(text)) lang = 'hi-IN'; // Devanagari characters for Hindi
+            else if (/[\u0d00-\u0d7F]/.test(text)) lang = 'ml-IN'; // Malayalam characters
+            else if (/[\u0b80-\u0bff]/.test(text)) lang = 'ta-IN'; // Tamil characters
+            
+            currentUtterance.lang = lang;
+            
+            const selectedVoiceName = DOMElements.voiceSelect.value;
+            const voice = speechVoices.find(v => v.name === selectedVoiceName && v.lang.startsWith(lang.split('-')[0])) || speechVoices.find(v => v.lang.startsWith(lang.split('-')[0]));
+
+            if (voice) {
+                currentUtterance.voice = voice;
+            } else {
+                 console.warn(`No specific voice found for language: ${lang}. Using browser default.`);
+            }
             
             document.querySelectorAll('.play-icon').forEach(i => i.classList.remove('hidden'));
             document.querySelectorAll('.stop-icon').forEach(i => i.classList.add('hidden'));
@@ -667,10 +764,16 @@
                 const stopIcon = button.querySelector('.stop-icon');
                 currentUtterance.onstart = () => { playIcon.classList.add('hidden'); stopIcon.classList.remove('hidden'); };
                 currentUtterance.onend = () => { playIcon.classList.remove('hidden'); stopIcon.classList.add('hidden'); currentUtterance = null; };
-                currentUtterance.onerror = () => { playIcon.classList.remove('hidden'); stopIcon.classList.add('hidden'); currentUtterance = null; };
+                currentUtterance.onerror = (e) => { 
+                    console.error("Speech synthesis error:", e);
+                    playIcon.classList.remove('hidden'); stopIcon.classList.add('hidden'); currentUtterance = null; 
+                };
             } else {
                  currentUtterance.onend = () => { currentUtterance = null; };
-                 currentUtterance.onerror = () => { currentUtterance = null; };
+                 currentUtterance.onerror = (e) => { 
+                    console.error("Speech synthesis error:", e);
+                    currentUtterance = null; 
+                 };
             }
             speechSynthesis.speak(currentUtterance);
         };
@@ -678,6 +781,7 @@
         // --- Event Listeners ---
         DOMElements.sendButton.addEventListener('click', () => { handleTextQuery(DOMElements.userInput.value); DOMElements.userInput.value = ''; });
         DOMElements.userInput.addEventListener('keypress', (e) => e.key === 'Enter' && DOMElements.sendButton.click());
+        DOMElements.apiStatusButton.addEventListener('click', checkApiStatus);
         DOMElements.imageUpload.addEventListener('change', () => {
             const file = DOMElements.imageUpload.files[0];
             DOMElements.fileNameDisplay.textContent = file ? file.name : '';
@@ -728,7 +832,11 @@
         DOMElements.modalCancelButton.addEventListener('click', () => DOMElements.customModal.classList.add('hidden'));
         DOMElements.newChatButton.addEventListener('click', startNewChat);
         DOMElements.menuToggle.addEventListener('click', () => DOMElements.sidebar.classList.toggle('-translate-x-full'));
-        DOMElements.languageSelect.addEventListener('change', (e) => updateLanguage(e.target.value));
+        DOMElements.languageSelect.addEventListener('change', (e) => {
+            updateLanguage(e.target.value);
+            updateRealtimeInfo();
+            startNewChat(); // Reset chat when language is changed via dropdown
+        });
         DOMElements.chatHistory.addEventListener('click', (e) => {
             const speakerButton = e.target.closest('.speaker-button');
             if (speakerButton) speakText(decodeURIComponent(speakerButton.dataset.text), speakerButton);
@@ -755,10 +863,19 @@
         updateLanguage(savedLang);
         updateRealtimeInfo();
         setInterval(updateRealtimeInfo, 60000);
+        
+        // Load speech synthesis voices, which can be asynchronous
+        loadVoices();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+        
         getWeather(); // Attempt to get weather on load
         loadRecentChats();
         startNewChat();
+        checkApiStatus(); // Check API status on page load
 
     </script>
 </body>
 </html>
+
