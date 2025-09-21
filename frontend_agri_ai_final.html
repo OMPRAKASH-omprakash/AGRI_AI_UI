@@ -39,7 +39,7 @@
             opacity: 0;
             transform: translateY(10px);
         }
-        
+
         @keyframes message-fade-in {
             to {
                 opacity: 1;
@@ -76,7 +76,7 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
-        
+
         #loading-modal .loader {
             display: flex;
             gap: 0.5rem;
@@ -94,7 +94,7 @@
             0%, 100% { transform: scale(0.8); opacity: 0.7; }
             50% { transform: scale(1.2); opacity: 1; }
         }
-        
+
         #sidebar-container {
             position: relative;
             transition: min-width 0.3s ease-in-out;
@@ -102,7 +102,7 @@
             width: 16rem;
             flex-shrink: 0;
         }
-        
+
         #sidebar { 
             transition: transform 0.3s ease-in-out; 
             background-color: rgba(255, 255, 255, 0.9);
@@ -115,7 +115,7 @@
             display: flex;
             flex-direction: column;
         }
-        
+
         .sidebar-collapsed #sidebar {
             transform: translateX(-100%);
         }
@@ -123,7 +123,7 @@
             min-width: 0;
             width: 0;
         }
-        
+
         .ai-message-controls {
             position: absolute; bottom: 8px; right: 8px;
             display: flex;
@@ -137,7 +137,7 @@
             transition: background-color 0.2s;
         }
         .control-button:hover { background-color: #d1d5db; }
-        
+
         #voice-modal { background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); }
         .voice-wave {
             width: 80px; height: 80px; border-radius: 50%;
@@ -183,7 +183,7 @@
             background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        
+
         .message-content { padding-right: 4.5rem; /* Space for buttons */ }
         .translate-popup {
             position: absolute;
@@ -245,9 +245,9 @@
 <body class="p-4">
     <div class="main-container mx-auto flex gap-4 relative">
         <div id="sidebar-container">
-            <aside id="sidebar" class="p-4 rounded-2xl">
+            <aside id="sidebar" class="p-4 pl-8 rounded-2xl">
                  <div class="flex justify-between items-center mb-4 flex-shrink-0">
-                    
+
                  </div>
                  <button id="new-chat-button" class="w-full text-left p-3 mb-4 rounded-xl hover:bg-blue-100 font-semibold flex items-center gap-3 text-gray-700 transition-colors flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
@@ -261,7 +261,7 @@
                 <div id="recent-chats-list" class="flex-1 overflow-y-auto space-y-1"></div>
             </aside>
         </div>
-        <button id="sidebar-toggle" class="absolute top-4 left-4 z-30 p-2 rounded-full hover:bg-gray-200 transition-colors">
+        <button id="sidebar-toggle" class="absolute top-4 left-2 z-30 p-2 rounded-full hover:bg-gray-200 transition-colors">
              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button>
 
@@ -439,7 +439,7 @@
             userIdDisplay: document.getElementById('user-id'),
             locationDisplay: document.getElementById('location-display')
         };
-        
+
         // --- UI Functions ---
         const showLoading = (show) => DOMElements.loadingModal.classList.toggle('hidden', !show);
         const showModal = (title, message, showCancelButton = false) => {
@@ -447,9 +447,9 @@
             DOMElements.modalTitle.textContent = title;
             DOMElements.modalMessage.innerHTML = message; // Use innerHTML to allow links
             DOMElements.modalCancelButton.style.display = showCancelButton ? 'inline-block' : 'none';
-            
+
             const isDeleteAction = modalAction && modalAction.toLowerCase().includes('delete');
-            
+
             if (isDeleteAction) {
                 modalHeader.style.background = 'linear-gradient(120deg, #b91c1c, #ef4444)';
                 DOMElements.modalOkButton.style.background = 'linear-gradient(120deg, #b91c1c, #ef4444)';
@@ -487,7 +487,7 @@
             const messageEl = document.createElement('div');
             messageEl.classList.add('message-box', sender === 'user' ? 'user-message' : 'ai-message');
             messageEl.dataset.originalText = text; // Store original text for translation
-            
+
             let content = sender === 'ai' ? parseMarkdown(text) : `<p>${text}</p>`;
             let controlsHTML = sender === 'ai' 
                 ? `<div class="ai-message-controls">
@@ -502,7 +502,7 @@
                       </button>
                    </div>`
                 : '';
-            
+
             messageEl.innerHTML = `<strong>${sender === 'user' ? 'You' : 'Agri-Assistant'}:</strong><div class="message-content">${content}</div>${controlsHTML}`;
 
             if (mediaUrl) {
@@ -531,7 +531,7 @@
             const langCode = DOMElements.languageSelect.value;
             const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
             const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            
+
             try {
                  DOMElements.timeDisplay.textContent = new Intl.DateTimeFormat(langCode, timeOptions).format(now);
                  DOMElements.dateDisplay.textContent = new Intl.DateTimeFormat(langCode, dateOptions).format(now);
@@ -542,7 +542,7 @@
                 DOMElements.dateDisplay.textContent = new Intl.DateTimeFormat('en-US', dateOptions).format(now);
             }
         };
-        
+
         const updateWeatherUI = (data) => {
             if (!data || !data.description) return;
             document.getElementById('weather-container').classList.remove('hidden');
@@ -554,7 +554,7 @@
             document.getElementById('humidity-display').textContent = data.humidity;
             document.getElementById('wind-display').textContent = data.windSpeed;
         };
-        
+
         const fetchWeatherData = async (lat, lon) => {
             const prompt = `Provide ONLY a JSON object with the current weather for latitude ${lat} and longitude ${lon}, using Google Weather data. The JSON object must have these exact keys: "locationName" (string, e.g., "Mountain View, CA"), "description" (string, e.g., "Sunny"), "temperatureCelsius" (integer), "temperatureFahrenheit" (integer), "humidity" (integer), "windSpeed" (integer, in km/h), and "icon" (a single appropriate emoji, e.g., '☀️', '☁️', '🌧️'). Do not include any other text, markdown formatting, or explanations.`;
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
@@ -651,7 +651,7 @@
                 }
             });
         };
-        
+
         const startNewChat = () => {
             currentChatId = null;
             localChatHistory = [];
@@ -702,7 +702,7 @@
 
         const saveChatHistory = async () => {
             if (!userId || localChatHistory.length === 0) return;
-            
+
             try {
                 if (currentChatId) {
                     const chatRef = doc(db, 'users', userId, 'chats', currentChatId);
@@ -728,7 +728,7 @@
             if (!currentChatId || !userId) return;
             await deleteSpecificChat(currentChatId);
         };
-        
+
         const deleteSpecificChat = async (chatId) => {
             if (!userId || !chatId) return;
             showLoading(true);
@@ -760,7 +760,7 @@
             const errorMessage = errorData.error?.message || 'An unknown error occurred.';
             showModal("API Error", `An error occurred: ${errorMessage} <br><br> <a href="https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini" target="_blank" class="text-blue-600 underline">Learn More</a>`);
         };
-        
+
         // --- Image Generation ---
         const generateImageForMessage = async (prompt, messageEl) => {
             const placeholder = document.createElement('div');
@@ -794,7 +794,7 @@
                     imgEl.src = imageUrl;
                     imgEl.classList.add('mt-2', 'rounded-lg', 'max-w-full', 'h-auto', 'max-h-60');
                     placeholder.replaceWith(imgEl);
-                    
+
                     if (localChatHistory.length > 0) {
                         localChatHistory[localChatHistory.length - 1].mediaUrl = imageUrl;
                         localChatHistory[localChatHistory.length - 1].mediaType = 'image';
@@ -812,12 +812,12 @@
         // --- Core API Call Logic ---
         const handleTextQuery = async (query) => {
             if (!query.trim()) return;
-            
+
             localChatHistory.push({ text: query, sender: 'user'});
             addMessageToChat(query, 'user');
             await saveChatHistory();
             showLoading(true);
-            
+
             const selectedLanguage = DOMElements.languageSelect.options[DOMElements.languageSelect.selectedIndex].text;
             const langCode = DOMElements.languageSelect.value.split('-')[0];
 
@@ -825,7 +825,7 @@
                 role: msg.sender === 'user' ? 'user' : 'model',
                 parts: [{ text: msg.text }]
             }));
-            
+
             const systemPrompt = `You are Friday, an AI Agri-Assistant.
 
 **Core Directives:**
@@ -856,7 +856,7 @@
                 }
                 const result = await response.json();
                 const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-                
+
                 const hasContent = text && text.replace(/#+\s*/g, '').replace(/ImagePrompt:.*/i, '').replace(/[\s*#-]/g, '').length > 10;
 
                 if (hasContent) {
@@ -880,7 +880,7 @@
                     if (imagePrompt && latestMessageEl) {
                         generateImageForMessage(imagePrompt, latestMessageEl);
                     }
-                    
+
                     if (isVoiceInteraction) {
                         speakText(aiResponseText, null);
                         isVoiceInteraction = false;
@@ -900,7 +900,7 @@
             showLoading(true);
             const mediaType = file.type;
             const prompt = `Analyze this agricultural media. Identify any visible plant diseases, pests, or nutrient deficiencies. If a problem is identified, suggest organic and chemical pesticide recommendations with dosages. If it's not an agricultural image, video, or audio file, state that you can only analyze farming-related media. Respond in the language of the user's UI, which is set to ${DOMElements.languageSelect.options[DOMElements.languageSelect.selectedIndex].text}.`;
-            
+
             localChatHistory.push({ text: `Analyzing media...`, sender: 'user', mediaUrl: base64Data, mediaType: mediaType });
             addMessageToChat(`Analyzing your ${mediaType.split('/')[0]}...`, 'user', base64Data, mediaType);
             await saveChatHistory();
@@ -926,7 +926,7 @@
             } catch (error) { showModal("Error", `Media analysis failed: ${error.message}`); }
             finally { showLoading(false); }
            };
-        
+
         // --- Voice Synthesis and Recognition ---
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.interimResults = false;
@@ -936,11 +936,11 @@
         });
         recognition.addEventListener('end', () => DOMElements.voiceModal.classList.add('hidden'));
         recognition.addEventListener('error', (e) => showModal('Voice Error', `Recognition error: ${e.error}`));
-        
+
         const loadVoices = () => {
             speechVoices = speechSynthesis.getVoices();
             DOMElements.voiceSelect.innerHTML = '';
-            
+
             const funkyNames = ['Sky', 'River', 'Ember', 'Jade', 'Kai', 'Leo', 'Mia', 'Nico', 'Priya', 'Ravi', 'Sona', 'Tia', 'Uma', 'Veda', 'Zoya'];
             let nameIndex = 0;
 
@@ -962,9 +962,9 @@
                     return; 
                 }
             }
-            
+
             currentUtterance = new SpeechSynthesisUtterance(text);
-            
+
             let lang = 'en-US'; // Default
             if (button && button.dataset.lang) {
                 lang = button.dataset.lang;
@@ -973,12 +973,12 @@
             } else if (/[\u0d00-\u0d7F]/.test(text)) {
                 lang = 'ml-IN'; // Malayalam characters
             }
-            
+
             currentUtterance.lang = lang;
-            
+
             const selectedVoiceName = DOMElements.voiceSelect.value;
             let voice = speechVoices.find(v => v.name === selectedVoiceName && v.lang.startsWith(lang.split('-')[0]));
-            
+
             if (!voice) {
                 voice = speechVoices.find(v => v.lang.startsWith(lang.split('-')[0]));
             }
@@ -988,7 +988,7 @@
             } else {
                  console.warn(`No voice found for language: ${lang}. Using browser default.`);
             }
-            
+
             // Reset all icons first
             document.querySelectorAll('.speaker-button').forEach(btn => {
                 btn.classList.remove('is-playing');
@@ -1001,7 +1001,7 @@
                 button.classList.add('is-playing');
                 const playIcon = button.querySelector('.play-icon');
                 const stopIcon = button.querySelector('.stop-icon');
-                
+
                 currentUtterance.onstart = () => { 
                     playIcon.classList.add('hidden'); 
                     stopIcon.classList.remove('hidden'); 
@@ -1035,7 +1035,7 @@
             showLoading(true);
             const originalText = messageEl.dataset.originalText;
             const prompt = `Translate the following text to ${targetLangName}. Provide ONLY the translation, with no extra commentary or explanations:\n\n"${originalText}"`;
-            
+
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
 
@@ -1050,7 +1050,7 @@
                     const contentDiv = messageEl.querySelector('.message-content');
                     const speakerButton = messageEl.querySelector('.speaker-button');
                     const textContainer = contentDiv.querySelector('p, ul, h3') || contentDiv;
-                    
+
                     textContainer.innerHTML = parseMarkdown(translatedText.trim());
 
                     if (speakerButton) {
@@ -1115,7 +1115,7 @@
         // --- Event Listeners ---
         DOMElements.sendButton.addEventListener('click', () => { handleTextQuery(DOMElements.userInput.value); DOMElements.userInput.value = ''; });
         DOMElements.userInput.addEventListener('keypress', (e) => e.key === 'Enter' && DOMElements.sendButton.click());
-        
+
         DOMElements.fileUpload.addEventListener('change', () => {
             const file = DOMElements.fileUpload.files[0];
             const lang = DOMElements.languageSelect.value;
@@ -1141,7 +1141,7 @@
                 resetFileUpload();
             }
         });
-        
+
         DOMElements.cancelFileButton.addEventListener('click', resetFileUpload);
 
         DOMElements.uploadButton.addEventListener('click', () => { 
@@ -1207,7 +1207,7 @@
                 showLanguageSelector(translateButton);
             }
         });
-      
+
         DOMElements.getLocationButton.addEventListener('click', getWeather);
 
         DOMElements.searchChatsInput.addEventListener('input', (e) => {
@@ -1238,20 +1238,20 @@
             if (user) {
                 userId = user.uid;
                 DOMElements.userIdDisplay.textContent = `User ID: ${userId.substring(0,12)}...`;
-                
+
                 const savedLang = localStorage.getItem('preferredLanguage') || 'en-US';
                 DOMElements.languageSelect.value = savedLang;
                 updateLanguage(savedLang);
                 updateRealtimeInfo();
                 setInterval(updateRealtimeInfo, 1000);
-                
+
                 setTimeout(() => {
                     loadVoices();
                     if (speechSynthesis.onvoiceschanged !== undefined) {
                         speechSynthesis.onvoiceschanged = loadVoices;
                     }
                 }, 500);
-                
+
                 getWeather();
                 loadRecentChats(); 
                 startNewChat();
@@ -1266,4 +1266,3 @@
     </script>
 </body>
 </html>
-
