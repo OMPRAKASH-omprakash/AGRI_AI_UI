@@ -96,11 +96,20 @@
         }
         
         #sidebar { 
-            transition: transform 0.3s ease-in-out; 
+            transition: transform 0.3s ease-in-out, width 0.3s ease-in-out, padding 0.3s ease-in-out; 
             background-color: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(5px);
             border-right: 1px solid rgba(255, 255, 255, 0.3);
+            width: 16rem; /* w-64 */
+            flex-shrink: 0;
+            overflow: hidden;
         }
+        .sidebar-collapsed #sidebar {
+            transform: translateX(-100%);
+            width: 0;
+            padding: 0;
+        }
+        
         .ai-message-controls {
             position: absolute; bottom: 8px; right: 8px;
             display: flex;
@@ -156,8 +165,8 @@
         }
         .info-card h3 {
             background: linear-gradient(120deg, #1e3a8a, #2563eb);
-            background-clip: text;
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         #api-status-button {
@@ -189,16 +198,43 @@
             font-size: 14px;
         }
         .translate-popup button:hover { background-color: #f3f4f6; }
+
+        .sidebar-item-menu {
+            display: none;
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(229, 231, 235, 0.8);
+            border-radius: 0.5rem;
+        }
+        .sidebar-item:hover .sidebar-item-menu {
+            display: flex;
+        }
+        .sidebar-item-menu button {
+            background: none;
+            border: none;
+            padding: 0.25rem;
+            cursor: pointer;
+            color: #4b5563;
+        }
+        .sidebar-item-menu button:hover {
+            color: #1d4ed8;
+        }
     </style>
 </head>
 <body class="p-4">
-    <div class="main-container mx-auto flex gap-4">
-
-        <aside id="sidebar" class="p-4 rounded-2xl flex-col w-64 absolute md:relative z-20 md:transform-none -translate-x-full">
-            <button id="new-chat-button" class="w-full text-left p-3 mb-4 rounded-xl hover:bg-blue-100 font-semibold flex items-center gap-3 text-gray-700 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                <span data-translate="new_chat">New Chat</span>
-            </button>
+    <div class="main-container mx-auto flex gap-4 relative">
+        <button id="sidebar-toggle" class="absolute top-4 left-4 z-30 p-2 rounded-full hover:bg-gray-200 transition-colors">
+             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+        <aside id="sidebar" class="p-4 rounded-2xl flex-col">
+            <div class="relative">
+                <button id="new-chat-button" class="w-full text-left p-3 mb-4 rounded-xl hover:bg-blue-100 font-semibold flex items-center gap-3 text-gray-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                    <span data-translate="new_chat">New Chat</span>
+                </button>
+            </div>
             <div class="relative mb-4">
                 <input type="text" id="search-chats" data-translate-placeholder="search_placeholder" placeholder="Search..." class="w-full p-2 border rounded-lg text-sm pl-8 focus:ring-2 focus:ring-blue-400 transition">
                 <svg class="w-4 h-4 absolute top-1/2 left-2.5 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -208,13 +244,9 @@
         </aside>
 
         <main class="flex-1 flex flex-col md:flex-row gap-4">
-            <button id="menu-toggle" class="md:hidden absolute top-4 left-4 z-30 p-2 bg-white rounded-full shadow-md">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-            </button>
-
             <div class="flex-1 flex flex-col gap-4">
                  <div class="flex justify-between items-start">
-                    <div class="text-center md:text-left">
+                    <div class="text-center md:text-left pl-16">
                         <h1 class="text-4xl font-bold" data-translate="title" style="background: linear-gradient(120deg, #1e3a8a, #2563eb, #3b82f6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Agri-Assistant</h1>
                         <p id="user-id" class="text-sm font-medium mt-2 text-gray-500">Connecting...</p>
                     </div>
@@ -241,11 +273,11 @@
                     </div>
                     <div class="mt-4 flex flex-col md:flex-row items-center gap-4">
                         <div class="w-full flex items-center gap-2">
-                            <label for="image-upload" id="image-upload-label" data-translate="choose_file" class="cursor-pointer text-sm text-blue-700 font-semibold bg-blue-100 hover:bg-blue-200 text-center p-2 rounded-lg whitespace-nowrap transition-colors">Choose file</label>
-                            <input type="file" id="image-upload" accept="image/*" class="hidden" />
+                            <label for="file-upload" id="file-upload-label" data-translate="choose_file" class="cursor-pointer text-sm text-blue-700 font-semibold bg-blue-100 hover:bg-blue-200 text-center p-2 rounded-lg whitespace-nowrap transition-colors">Choose File</label>
+                            <input type="file" id="file-upload" accept="image/*,video/*" class="hidden" />
                             <span id="file-name-display" class="text-sm text-gray-600 truncate"></span>
                         </div>
-                        <button id="upload-button" class="btn-primary w-full md:w-auto" style="background: linear-gradient(120deg, #166534, #22c55e); color: #ffffff; padding: 0.5rem 1rem; border-radius: 0.5rem;" data-translate="analyze_image_button">Analyze Image</button>
+                        <button id="upload-button" class="btn-primary w-full md:w-auto" style="background: linear-gradient(120deg, #166534, #22c55e); color: #ffffff; padding: 0.5rem 1rem; border-radius: 0.5rem;" data-translate="analyze_media_button">Analyze Media</button>
                         <button id="delete-chat-button" class="btn-primary w-full md:w-auto" style="background: linear-gradient(120deg, #b91c1c, #ef4444); color: #ffffff; padding: 0.5rem 1rem; border-radius: 0.5rem;" data-translate="delete_chat_button">Delete Chat</button>
                     </div>
                 </div>
@@ -340,46 +372,47 @@
 
 
     <script type="module">
-        // The API key is provided automatically by the environment.
-        const geminiApiKey = "AIzaSyD3F33tYLAlpIQ2g64T2yhCGRm8c5GlU9o";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, setDoc, getDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyAgxfqvcE26u5bOOS7snmbKMe1zHoDjp24",
+          authDomain: "agri-ai-friday-d3e1a.firebaseapp.com",
+          projectId: "agri-ai-friday-d3e1a",
+          storageBucket: "agri-ai-friday-d3e1a.firebasestorage.app",
+          messagingSenderId: "967822044561",
+          appId: "1:967822044561:web:3d25728aebea646d547e30",
+          measurementId: "G-YTPW970P8C"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
 
         // --- Global Variables ---
+        const geminiApiKey = "AIzaSyD3F33tYLAlpIQ2g64T2yhCGRm8c5GlU9o";
         let userId, currentChatId = null, modalAction = null;
         let localChatHistory = [];
         let currentUtterance = null;
         let isVoiceInteraction = false;
         let speechVoices = [];
-
-        // --- Local Storage & User ID Management ---
-        const getUserId = () => {
-            let id = localStorage.getItem('agri_assistant_user_id');
-            if (!id) {
-                id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                localStorage.setItem('agri_assistant_user_id', id);
-            }
-            return id;
-        };
-
-        const getAllChatsFromStorage = () => {
-            const chats = localStorage.getItem(`chats_${userId}`);
-            return chats ? JSON.parse(chats) : {};
-        };
-        
-        const saveAllChatsToStorage = (chats) => {
-            localStorage.setItem(`chats_${userId}`, JSON.stringify(chats));
-        };
+        let chatsUnsubscribe = null;
 
         // --- Translation Data ---
         const translations = {
-            'en-US': { title: 'Agri-Assistant', new_chat: 'New Chat', search_placeholder: 'Search...', recent: 'Recent', welcome_message: "Welcome! How can I assist?", type_query_placeholder: 'Type your query...', send_button: 'Send', analyze_image_button: 'Analyze Image', delete_chat_button: 'Delete Chat', terrace_guide_title: 'Terrace Farming Guide', terrace_guide_desc: 'Create your own lush garden on a rooftop.', sunlight: 'Sunlight:', sunlight_desc: 'Ensure 5-6 hours of direct sunlight.', waterproofing: 'Waterproofing:', waterproofing_desc: 'A critical first step to prevent leaks.', potting_mix: 'Potting Mix:', potting_mix_desc: 'Use a lightweight mix to reduce roof load.', plant_selection: 'Plant Selection:', plant_selection_desc: 'Choose vegetables like tomatoes, chili, mint.', pest_control: 'Pest Control:', pest_control_desc: 'Use organic methods like neem oil.', contact_title: 'Need Help? Contact Us! 💬', contact_desc: 'For any agricultural queries, reach out!', toll_free: 'Toll-Free Number:', email: 'Email Address:', delete_options_title: 'Delete Options', delete_this_chat_button: 'Delete This Chat', delete_all_chats_button: 'Delete All Chats', voice_listening: 'Listening...', cancel_button: 'Cancel', ok_button: 'OK', choose_file: 'Choose File', humidity: 'Humidity', wind: 'Wind', lang_en: 'English', lang_ml: 'Malayalam', lang_hi: 'Hindi', lang_ta: 'Tamil' },
-            'ta-IN': { title: 'வேளாண் உதவியாளர்', new_chat: 'புதிய உரையாடல்', search_placeholder: 'தேடு...', recent: 'சமீபத்தியவை', welcome_message: "வணக்கம்! எப்படி உதவட்டும்?", type_query_placeholder: 'உங்கள் வினவலை தட்டச்சு செய்க...', send_button: 'அனுப்பு', analyze_image_button: 'படத்தை பகுப்பாய்வு செய்', delete_chat_button: 'உரையாடலை நீக்கு', terrace_guide_title: 'மொட்டைமாடி விவசாய வழிகாட்டி', terrace_guide_desc: 'உங்கள் மொட்டை மாடியில் பசுமையான தோட்டத்தை உருவாக்குவது எப்படி.', sunlight: 'சூரிய ஒளி:', sunlight_desc: '5-6 மணிநேர நேரடி சூரிய ஒளி தேவை.', waterproofing: 'நீர்ப்புகாப்பு:', waterproofing_desc: 'கசிவுகளைத் தடுக்க முதல் படி.', potting_mix: 'மண் கலவை:', potting_mix_desc: 'இலகுரக கலவையைப் பயன்படுத்தவும்.', plant_selection: 'தாவரத் தேர்வு:', plant_selection_desc: 'தக்காளி, மிளகாய், புதினா தேர்ந்தெடுக்கவும்.', pest_control: 'பூச்சி கட்டுப்பாடு:', pest_control_desc: 'வேப்பெண்ணெய் போன்ற இயற்கை முறைகளைப் பயன்படுத்தவும்.', contact_title: 'உதவி தேவையா? 💬', contact_desc: 'விவசாய வினவல்களுக்கு, எங்களை அணுகவும்!', toll_free: 'இலவச அழைப்பு எண்:', email: 'மின்னஞ்சல் முகவரி:', delete_options_title: 'நீக்குதல் விருப்பங்கள்', delete_this_chat_button: 'இந்த உரையாடலை நீக்கு', delete_all_chats_button: 'அனைத்து உரையாடல்களையும் நீக்கு', voice_listening: 'கேட்கிறது...', cancel_button: 'ரத்துசெய்', ok_button: 'சரி', choose_file: 'கோப்பைத் தேர்ந்தெடு', humidity: 'ஈரப்பதம்', wind: 'காற்று', lang_en: 'English', lang_ml: 'മലയാളം', lang_hi: 'हिंदी', lang_ta: 'தமிழ்' },
-            'hi-IN': { title: 'कृषि-सहायक', new_chat: 'नई चैट', search_placeholder: 'खोजें...', recent: 'हाल के', welcome_message: "नमस्ते! मैं कैसे मदद कर सकता हूँ?", type_query_placeholder: 'अपना प्रश्न लिखें...', send_button: 'भेजें', analyze_image_button: 'छवि का विश्लेषण करें', delete_chat_button: 'चैट हटाएं', terrace_guide_title: 'छत पर खेती की गाइड', terrace_guide_desc: 'एक छत पर अपना खुद का हरा-भरा बगीचा बनाएं।', sunlight: 'धूप:', sunlight_desc: '5-6 घंटे की सीधी धूप सुनिश्चित करें।', waterproofing: 'वॉटरप्रूफिंग:', waterproofing_desc: 'लीक को रोकने के लिए एक महत्वपूर्ण पहला कदम।', potting_mix: 'पॉटिंग मिक्स:', potting_mix_desc: 'छत का भार कम करने के लिए हल्के मिश्रण का उपयोग करें।', plant_selection: 'पौधों का चयन:', plant_selection_desc: 'टमाटर, मिर्च, पुदीना जैसी सब्जियां चुनें।', pest_control: 'कीट नियंत्रण:', pest_control_desc: 'नीम तेल जैसे जैविक तरीकों का प्रयोग करें।', contact_title: 'मदद चाहिए? संपर्क करें! 💬', contact_desc: 'किसी भी कृषि प्रश्न के लिए, संपर्क करें!', toll_free: 'टोल-फ्री नंबर:', email: 'ईमेल पता:', delete_options_title: 'विकल्प हटाएं', delete_this_chat_button: 'इस चैट को हटाएं', delete_all_chats_button: 'सभी चैट हटाएं', voice_listening: 'सुन रहा हूँ...', cancel_button: 'रद्द करें', ok_button: 'ठीक है', choose_file: 'फ़ाइल चुनें', humidity: 'नमी', wind: 'हवा', lang_en: 'English', lang_ml: 'Malayalam', lang_hi: 'हिंदी', lang_ta: 'தமிழ்' },
-            'ml-IN': { title: 'അഗ്രി-അസിസ്റ്റന്റ്', new_chat: 'പുതിയ ചാറ്റ്', search_placeholder: 'തിരയുക...', recent: 'സമീപകാലം', welcome_message: "സ്വാഗതം! ഞാനെങ്ങനെ സഹായിക്കേണ്ടു?", type_query_placeholder: 'നിങ്ങളുടെ ചോദ്യം ടൈപ്പ് ചെയ്യുക...', send_button: 'അയയ്ക്കുക', analyze_image_button: 'ചിത്രം വിശകലനം ചെയ്യുക', delete_chat_button: 'ചാറ്റ് ഇല്ലാതാക്കുക', terrace_guide_title: 'ടെറസ് ഫാമിംഗ് ഗൈഡ്', terrace_guide_desc: 'ഒരു മേൽക്കൂരയിൽ നിങ്ങളുടെ സ്വന്തം പൂന്തോട്ടം ഉണ്ടാക്കുക.', sunlight: 'സൂര്യപ്രകാശം:', sunlight_desc: '5-6 മണിക്കൂർ നേരിട്ടുള്ള സൂര്യപ്രകാശം ഉറപ്പാക്കുക.', waterproofing: 'വാട്ടർപ്രൂഫിംഗ്:', waterproofing_desc: 'ചോർച്ച തടയുന്നതിനുള്ള ഒരു നിർണായക ആദ്യപടി.', potting_mix: 'പോട്ടിംഗ് മിശ്രിതം:', potting_mix_desc: 'മേൽക്കൂരയുടെ ഭാരം കുറയ്ക്കാൻ ഭാരം കുറഞ്ഞ മിശ്രിതം ഉപയോഗിക്കുക.', plant_selection: 'ചെടി തിരഞ്ഞെടുക്കൽ:', plant_selection_desc: 'തക്കാളി, മുളക്, പുതിന തുടങ്ങിയ പച്ചക്കറികൾ തിരഞ്ഞെടുക്കുക.', pest_control: 'കീട നിയന്ത്രണം:', pest_control_desc: 'വേപ്പെണ്ണ പോലുള്ള ജൈവ രീതികൾ ഉപയോഗിക്കുക.', contact_title: 'സഹായം വേണോ? ഞങ്ങളെ സമീപിക്കുക! 💬', contact_desc: 'ഏത് കാർഷിക സംശയങ്ങൾക്കും ബന്ധപ്പെടുക!', toll_free: 'ടോൾ ഫ്രീ നമ്പർ:', email: 'ഇമെയിൽ വിലാസം:', delete_options_title: 'ഓപ്ഷനുകൾ ഇല്ലാതാക്കുക', delete_this_chat_button: 'ഈ ചാറ്റ് ഇല്ലാതാക്കുക', delete_all_chats_button: 'എല്ലാ ചാറ്റുകളും ഇല്ലാതാക്കുക', voice_listening: 'കേൾക്കുന്നു...', cancel_button: 'രദ്ദാക്കുക', ok_button: 'ശരി', choose_file: 'ഫയൽ തിരഞ്ഞെടുക്കുക', humidity: 'ഈർപ്പം', wind: 'കാറ്റ്', lang_en: 'English', lang_ml: 'Malayalam', lang_hi: 'Hindi', lang_ta: 'Tamil' }
+            'en-US': { title: 'Agri-Assistant', new_chat: 'New Chat', search_placeholder: 'Search...', recent: 'Recent', welcome_message: "Welcome! How can I assist?", type_query_placeholder: 'Type your query...', send_button: 'Send', analyze_media_button: 'Analyze Media', analyze_image_button: 'Analyze Image', analyze_video_button: 'Analyze Video', delete_chat_button: 'Delete Chat', terrace_guide_title: 'Terrace Farming Guide', terrace_guide_desc: 'Create your own lush garden on a rooftop.', sunlight: 'Sunlight:', sunlight_desc: 'Ensure 5-6 hours of direct sunlight.', waterproofing: 'Waterproofing:', waterproofing_desc: 'A critical first step to prevent leaks.', potting_mix: 'Potting Mix:', potting_mix_desc: 'Use a lightweight mix to reduce roof load.', plant_selection: 'Plant Selection:', plant_selection_desc: 'Choose vegetables like tomatoes, chili, mint.', pest_control: 'Pest Control:', pest_control_desc: 'Use organic methods like neem oil.', contact_title: 'Need Help? Contact Us! 💬', contact_desc: 'For any agricultural queries, reach out!', toll_free: 'Toll-Free Number:', email: 'Email Address:', delete_options_title: 'Delete Options', delete_this_chat_button: 'Delete This Chat', delete_all_chats_button: 'Delete All Chats', voice_listening: 'Listening...', cancel_button: 'Cancel', ok_button: 'OK', choose_file: 'Choose File', humidity: 'Humidity', wind: 'Wind', lang_en: 'English', lang_ml: 'Malayalam', lang_hi: 'Hindi', lang_ta: 'Tamil' },
+            'ta-IN': { title: 'வேளாண் உதவியாளர்', new_chat: 'புதிய உரையாடல்', search_placeholder: 'தேடு...', recent: 'சமீபத்தியவை', welcome_message: "வணக்கம்! எப்படி உதவட்டும்?", type_query_placeholder: 'உங்கள் வினவலை தட்டச்சு செய்க...', send_button: 'அனுப்பு', analyze_media_button: 'ஊடகத்தை பகுப்பாய்வு செய்', analyze_image_button: 'படத்தை பகுப்பாய்வு செய்', analyze_video_button: 'காணொளியை பகுப்பாய்வு செய்', delete_chat_button: 'உரையாடலை நீக்கு', terrace_guide_title: 'மொட்டைமாடி விவசாய வழிகாட்டி', terrace_guide_desc: 'உங்கள் மொட்டை மாடியில் பசுமையான தோட்டத்தை உருவாக்குவது எப்படி.', sunlight: 'சூரிய ஒளி:', sunlight_desc: '5-6 மணிநேர நேரடி சூரிய ஒளி தேவை.', waterproofing: 'நீர்ப்புகாப்பு:', waterproofing_desc: 'கசிவுகளைத் தடுக்க முதல் படி.', potting_mix: 'மண் கலவை:', potting_mix_desc: 'இலகுரக கலவையைப் பயன்படுத்தவும்.', plant_selection: 'தாவரத் தேர்வு:', plant_selection_desc: 'தக்காளி, மிளகாய், புதினா தேர்ந்தெடுக்கவும்.', pest_control: 'பூச்சி கட்டுப்பாடு:', pest_control_desc: 'வேப்பெண்ணெய் போன்ற இயற்கை முறைகளைப் பயன்படுத்தவும்.', contact_title: 'உதவி தேவையா? 💬', contact_desc: 'விவசாய வினவல்களுக்கு, எங்களை அணுகவும்!', toll_free: 'இலவச அழைப்பு எண்:', email: 'மின்னஞ்சல் முகவரி:', delete_options_title: 'நீக்குதல் விருப்பங்கள்', delete_this_chat_button: 'இந்த உரையாடலை நீக்கு', delete_all_chats_button: 'அனைத்து உரையாடல்களையும் நீக்கு', voice_listening: 'கேட்கிறது...', cancel_button: 'ரத்துசெய்', ok_button: 'சரி', choose_file: 'கோப்பைத் தேர்ந்தெடு', humidity: 'ஈரப்பதம்', wind: 'காற்று', lang_en: 'English', lang_ml: 'മലയാളം', lang_hi: 'हिंदी', lang_ta: 'தமிழ்' },
+            'hi-IN': { title: 'कृषि-सहायक', new_chat: 'नई चैट', search_placeholder: 'खोजें...', recent: 'हाल के', welcome_message: "नमस्ते! मैं कैसे मदद कर सकता हूँ?", type_query_placeholder: 'अपना प्रश्न लिखें...', send_button: 'भेजें', analyze_media_button: 'मीडिया का विश्लेषण करें', analyze_image_button: 'छवि का विश्लेषण करें', analyze_video_button: 'वीडियो का विश्लेषण करें', delete_chat_button: 'चैट हटाएं', terrace_guide_title: 'छत पर खेती की गाइड', terrace_guide_desc: 'एक छत पर अपना खुद का हरा-भरा बगीचा बनाएं।', sunlight: 'धूप:', sunlight_desc: '5-6 घंटे की सीधी धूप सुनिश्चित करें।', waterproofing: 'वॉटरप्रूफिंग:', waterproofing_desc: 'लीक को रोकने के लिए एक महत्वपूर्ण पहला कदम।', potting_mix: 'पॉटिंग मिक्स:', potting_mix_desc: 'छत का भार कम करने के लिए हल्के मिश्रण का उपयोग करें।', plant_selection: 'पौधों का चयन:', plant_selection_desc: 'टमाटर, मिर्च, पुदीना जैसी सब्जियां चुनें।', pest_control: 'कीट नियंत्रण:', pest_control_desc: 'नीम तेल जैसे जैविक तरीकों का प्रयोग करें।', contact_title: 'मदद चाहिए? संपर्क करें! 💬', contact_desc: 'किसी भी कृषि प्रश्न के लिए, संपर्क करें!', toll_free: 'टोल-फ्री नंबर:', email: 'ईमेल पता:', delete_options_title: 'विकल्प हटाएं', delete_this_chat_button: 'इस चैट को हटाएं', delete_all_chats_button: 'सभी चैट हटाएं', voice_listening: 'सुन रहा हूँ...', cancel_button: 'रद्द करें', ok_button: 'ठीक है', choose_file: 'फ़ाइल चुनें', humidity: 'नमी', wind: 'हवा', lang_en: 'English', lang_ml: 'Malayalam', lang_hi: 'हिंदी', lang_ta: 'தமிழ்' },
+            'ml-IN': { title: 'അഗ്രി-അസിസ്റ്റന്റ്', new_chat: 'പുതിയ ചാറ്റ്', search_placeholder: 'തിരയുക...', recent: 'സമീപകാലം', welcome_message: "സ്വാഗതം! ഞാനെങ്ങനെ സഹായിക്കേണ്ടു?", type_query_placeholder: 'നിങ്ങളുടെ ചോദ്യം ടൈപ്പ് ചെയ്യുക...', send_button: 'അയയ്ക്കുക', analyze_media_button: 'മീഡിയ വിശകലനം ചെയ്യുക', analyze_image_button: 'ചിത്രം വിശകലനം ചെയ്യുക', analyze_video_button: 'വീഡിയോ വിശകലനം ചെയ്യുക', delete_chat_button: 'ചാറ്റ് ഇല്ലാതാക്കുക', terrace_guide_title: 'ടെറസ് ഫാമിംഗ് ഗൈഡ്', terrace_guide_desc: 'ഒരു മേൽക്കൂരയിൽ നിങ്ങളുടെ സ്വന്തം പൂന്തോട്ടം ഉണ്ടാക്കുക.', sunlight: 'സൂര്യപ്രകാശം:', sunlight_desc: '5-6 മണിക്കൂർ നേരിട്ടുള്ള സൂര്യപ്രകാശം ഉറപ്പാക്കുക.', waterproofing: 'വാട്ടർപ്രൂഫിംഗ്:', waterproofing_desc: 'ചോർച്ച തടയുന്നതിനുള്ള ഒരു നിർണായക ആദ്യപടി.', potting_mix: 'പോട്ടിംഗ് മിശ്രിതം:', potting_mix_desc: 'മേൽക്കൂരയുടെ ഭാരം കുറയ്ക്കാൻ ഭാരം കുറഞ്ഞ മിശ്രിതം ഉപയോഗിക്കുക.', plant_selection: 'ചെടി തിരഞ്ഞെടുക്കൽ:', plant_selection_desc: 'തക്കാളി, മുളക്, പുതിന തുടങ്ങിയ പച്ചക്കറികൾ തിരഞ്ഞെടുക്കുക.', pest_control: 'കീട നിയന്ത്രണം:', pest_control_desc: 'വേപ്പെണ്ണ പോലുള്ള ജൈവ രീതികൾ ഉപയോഗിക്കുക.', contact_title: 'സഹായം വേണോ? ഞങ്ങളെ സമീപിക്കുക! 💬', contact_desc: 'ഏത് കാർഷിക സംശയങ്ങൾക്കും ബന്ധപ്പെടുക!', toll_free: 'ടോൾ ഫ്രീ നമ്പർ:', email: 'ഇമെയിൽ വിലാസം:', delete_options_title: 'ഓപ്ഷനുകൾ ഇല്ലാതാക്കുക', delete_this_chat_button: 'ഈ ചാറ്റ് ഇല്ലാതാക്കുക', delete_all_chats_button: 'എല്ലാ ചാറ്റുകളും ഇല്ലാതാക്കുക', voice_listening: 'കേൾക്കുന്നു...', cancel_button: 'രദ്ദാക്കുക', ok_button: 'ശരി', choose_file: 'ഫയൽ തിരഞ്ഞെടുക്കുക', humidity: 'ഈർപ്പം', wind: 'കാറ്റ്', lang_en: 'English', lang_ml: 'Malayalam', lang_hi: 'Hindi', lang_ta: 'Tamil' }
         };
 
         // --- DOM Elements ---
         const DOMElements = {
-            chatHistory: document.getElementById('chat-history'), userInput: document.getElementById('user-input'), sendButton: document.getElementById('send-button'), voiceButton: document.getElementById('voice-button'), languageSelect: document.getElementById('language-select'), voiceSelect: document.getElementById('voice-select'), deleteChatButton: document.getElementById('delete-chat-button'), loadingModal: document.getElementById('loading-modal'), customModal: document.getElementById('custom-modal'), modalTitle: document.getElementById('modal-title'), modalMessage: document.getElementById('modal-message'), modalOkButton: document.getElementById('modal-ok-button'), modalCancelButton: document.getElementById('modal-cancel-button'), newChatButton: document.getElementById('new-chat-button'), recentChatsList: document.getElementById('recent-chats-list'), searchChatsInput: document.getElementById('search-chats'), menuToggle: document.getElementById('menu-toggle'), sidebar: document.getElementById('sidebar'), deleteOptionsModal: document.getElementById('delete-options-modal'), deleteThisChatOptionButton: document.getElementById('delete-this-chat-option-button'), deleteAllChatsOptionButton: document.getElementById('delete-all-chats-option-button'), deleteOptionsCancelButton: document.getElementById('delete-options-cancel-button'), uploadButton: document.getElementById('upload-button'), imageUpload: document.getElementById('image-upload'), timeDisplay: document.getElementById('time-display'), dateDisplay: document.getElementById('date-display'), voiceModal: document.getElementById('voice-modal'), stopVoiceButton: document.getElementById('stop-voice-button'), getLocationButton: document.getElementById('get-location-button'), fileNameDisplay: document.getElementById('file-name-display'),
+            body: document.body,
+            chatHistory: document.getElementById('chat-history'), userInput: document.getElementById('user-input'), sendButton: document.getElementById('send-button'), voiceButton: document.getElementById('voice-button'), languageSelect: document.getElementById('language-select'), voiceSelect: document.getElementById('voice-select'), deleteChatButton: document.getElementById('delete-chat-button'), loadingModal: document.getElementById('loading-modal'), customModal: document.getElementById('custom-modal'), modalTitle: document.getElementById('modal-title'), modalMessage: document.getElementById('modal-message'), modalOkButton: document.getElementById('modal-ok-button'), modalCancelButton: document.getElementById('modal-cancel-button'), newChatButton: document.getElementById('new-chat-button'), recentChatsList: document.getElementById('recent-chats-list'), searchChatsInput: document.getElementById('search-chats'), sidebarToggle: document.getElementById('sidebar-toggle'), sidebar: document.getElementById('sidebar'), deleteOptionsModal: document.getElementById('delete-options-modal'), deleteThisChatOptionButton: document.getElementById('delete-this-chat-option-button'), deleteAllChatsOptionButton: document.getElementById('delete-all-chats-option-button'), deleteOptionsCancelButton: document.getElementById('delete-options-cancel-button'), uploadButton: document.getElementById('upload-button'), fileUpload: document.getElementById('file-upload'), timeDisplay: document.getElementById('time-display'), dateDisplay: document.getElementById('date-display'), voiceModal: document.getElementById('voice-modal'), stopVoiceButton: document.getElementById('stop-voice-button'), getLocationButton: document.getElementById('get-location-button'), fileNameDisplay: document.getElementById('file-name-display'),
             apiStatusButton: document.getElementById('api-status-button'), apiStatusIndicator: document.getElementById('api-status-indicator'), apiStatusText: document.getElementById('api-status-text'),
             locationDisplay: document.getElementById('location-display')
         };
@@ -406,9 +439,17 @@
         const updateLanguage = (lang) => {
             const langData = translations[lang] || translations['en-US'];
             document.querySelectorAll('[data-translate]').forEach(el => {
-                el.textContent = langData[el.dataset.translate] || el.textContent
+                const key = el.dataset.translate;
+                if (langData[key]) {
+                     el.textContent = langData[key];
+                }
             });
-            document.querySelectorAll('[data-translate-placeholder]').forEach(el => el.placeholder = langData[el.dataset.translatePlaceholder] || el.placeholder);
+            document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
+                 const key = el.dataset.translatePlaceholder;
+                 if(langData[key]) {
+                    el.placeholder = langData[key];
+                 }
+            });
             localStorage.setItem('preferredLanguage', lang);
         };
         const parseMarkdown = (text) => {
@@ -419,7 +460,7 @@
             }
             return html.replace(/\n/g, '<br>');
         };
-        const addMessageToChat = (text, sender, imageUrl = null) => {
+        const addMessageToChat = (text, sender, mediaUrl = null, mediaType = 'image') => {
             const messageEl = document.createElement('div');
             messageEl.classList.add('message-box', sender === 'user' ? 'user-message' : 'ai-message');
             messageEl.dataset.originalText = text; // Store original text for translation
@@ -428,10 +469,9 @@
             let controlsHTML = sender === 'ai' 
                 ? `<div class="ai-message-controls">
                       <button class="control-button translate-button" title="Translate">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                           <path fill-rule="evenodd" d="M7 2a1 1 0 011.707-.707l3.586 3.586a1 1 0 010 1.414l-3.586 3.586A1 1 0 017 9V5a1 1 0 00-1-1H3a1 1 0 000 2h2v4a1 1 0 001 1h2a1 1 0 100-2H7V2z" clip-rule="evenodd" />
-                           <path d="M13 3a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 110-2h1V4a1 1 0 01-1-1h-.5a1 1 0 010-2H13zM4 11a1 1 0 011-1h5a1 1 0 110 2H5a1 1 0 01-1-1zM11 13a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM14 11a1 1 0 100 2h1a1 1 0 100-2h-1z" />
-                         </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
                       </button>
                       <button class="control-button speaker-button" data-text="${encodeURIComponent(text)}" title="Read aloud">
                          <svg class="play-icon h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
@@ -442,11 +482,17 @@
             
             messageEl.innerHTML = `<strong>${sender === 'user' ? 'You' : 'Agri-Assistant'}:</strong><div class="message-content">${content}</div>${controlsHTML}`;
 
-            if (imageUrl) {
-                const imgEl = document.createElement('img');
-                imgEl.src = imageUrl;
-                imgEl.classList.add('mt-2', 'rounded-lg', 'max-w-full', 'h-auto', 'max-h-52');
-                messageEl.querySelector('.message-content').appendChild(imgEl);
+            if (mediaUrl) {
+                let mediaEl;
+                if (mediaType.startsWith('image')) {
+                    mediaEl = document.createElement('img');
+                } else if (mediaType.startsWith('video')) {
+                    mediaEl = document.createElement('video');
+                    mediaEl.controls = true;
+                }
+                mediaEl.src = mediaUrl;
+                mediaEl.classList.add('mt-2', 'rounded-lg', 'max-w-full', 'h-auto', 'max-h-60');
+                messageEl.querySelector('.message-content').appendChild(mediaEl);
             }
 
             DOMElements.chatHistory.appendChild(messageEl);
@@ -484,20 +530,25 @@
         };
         
         const fetchWeatherData = async (lat, lon) => {
-            const prompt = `Based on the latest Google Weather data for latitude ${lat} and longitude ${lon}, provide ONLY a JSON object with the current weather. The JSON object must have these exact keys: "locationName" (string, e.g., "Mountain View, CA"), "description" (string, e.g., "Sunny"), "temperatureCelsius" (integer), "temperatureFahrenheit" (integer), "humidity" (integer), "windSpeed" (integer, in km/h), and "icon" (a single appropriate emoji, e.g., '☀️', '☁️', '🌧️'). Do not include any other text or markdown formatting.`;
+            const prompt = `Provide ONLY a JSON object with the current weather for latitude ${lat} and longitude ${lon}, using Google Weather data. The JSON object must have these exact keys: "locationName" (string, e.g., "Mountain View, CA"), "description" (string, e.g., "Sunny"), "temperatureCelsius" (integer), "temperatureFahrenheit" (integer), "humidity" (integer), "windSpeed" (integer, in km/h), and "icon" (a single appropriate emoji, e.g., '☀️', '☁️', '🌧️'). Do not include any other text, markdown formatting, or explanations.`;
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
 
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error('Weather API fetch failed');
+                if (!response.ok) {
+                    throw new Error(`Gemini weather fetch failed with status: ${response.status}`);
+                }
                 const result = await response.json();
                 let text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                 if (!text) {
+                    throw new Error("No text returned from Gemini for weather.");
+                }
                 text = text.replace(/```json/g, '').replace(/```/g, '').trim();
                 const weatherData = JSON.parse(text);
                 updateWeatherUI(weatherData);
             } catch (error) {
-                console.error("Failed to fetch or parse weather data:", error);
+                console.error("Failed to fetch or parse weather data from Gemini:", error);
                 DOMElements.locationDisplay.textContent = "Weather unavailable";
             }
         };
@@ -516,109 +567,167 @@
                      }
                  );
              } else {
-                 console.log("Geolocation is not supported by this browser.");
+                DOMElements.getLocationButton.classList.remove('hidden');
+                DOMElements.locationDisplay.textContent = "Geolocation not supported";
+                console.log("Geolocation is not supported by this browser.");
              }
         };
 
-        // --- Chat Logic using LocalStorage ---
+        // --- Firestore Chat Logic ---
         const loadRecentChats = () => {
-            const allChats = getAllChatsFromStorage();
-            DOMElements.recentChatsList.innerHTML = '';
-            
-            const chatsArray = Object.entries(allChats).map(([id, chatData]) => ({ id, ...chatData }));
-            chatsArray.sort((a, b) => b.timestamp - a.timestamp);
+            if (!userId) return;
+            if (chatsUnsubscribe) chatsUnsubscribe();
 
-            chatsArray.forEach(chat => {
-                const firstMessage = chat.history?.[0]?.text || 'New Chat';
-                const chatEl = document.createElement('button');
-                chatEl.className = 'w-full text-left p-2 rounded-lg hover:bg-blue-100 text-sm truncate transition-colors';
-                chatEl.textContent = firstMessage;
-                chatEl.dataset.chatId = chat.id;
-                chatEl.addEventListener('click', () => loadChatHistory(chat.id));
-                DOMElements.recentChatsList.appendChild(chatEl);
+            const chatsQuery = query(collection(db, 'users', userId, 'chats'), orderBy('timestamp', 'desc'));
+            chatsUnsubscribe = onSnapshot(chatsQuery, (snapshot) => {
+                DOMElements.recentChatsList.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const chat = { id: doc.id, ...doc.data() };
+                    const firstMessage = chat.history?.[0]?.text || 'New Chat';
+                    const chatEl = document.createElement('div');
+                    chatEl.className = 'sidebar-item relative group w-full text-left p-2 rounded-lg hover:bg-blue-100 text-sm truncate transition-colors cursor-pointer';
+                    chatEl.innerHTML = `
+                        <span class="chat-title">${firstMessage}</span>
+                        <div class="sidebar-item-menu">
+                            <button class="rename-chat-btn" title="Rename">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                            <button class="delete-chat-btn" title="Delete">
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    chatEl.dataset.chatId = chat.id;
+                    chatEl.addEventListener('click', (e) => {
+                        if (!e.target.closest('button')) loadChatHistory(chat.id);
+                    });
+                    chatEl.querySelector('.delete-chat-btn').addEventListener('click', (e) => {
+                         e.stopPropagation();
+                         modalAction = 'deleteSpecificChat';
+                         DOMElements.modalOkButton.dataset.chatIdToDelete = chat.id;
+                         showModal('Confirm Deletion', `Are you sure you want to delete this chat?`, true);
+                    });
+                     chatEl.querySelector('.rename-chat-btn').addEventListener('click', (e) => {
+                         e.stopPropagation();
+                         const newName = prompt("Enter new name for this chat:", firstMessage);
+                         if (newName && newName.trim() !== "") renameChat(chat.id, newName.trim());
+                    });
+
+                    DOMElements.recentChatsList.appendChild(chatEl);
+                });
+                 if (currentChatId) {
+                    const activeChatEl = DOMElements.recentChatsList.querySelector(`[data-chat-id="${currentChatId}"]`);
+                    if(activeChatEl) activeChatEl.classList.add('bg-blue-200', 'font-semibold');
+                }
             });
         };
+        
         const startNewChat = () => {
             currentChatId = null;
             localChatHistory = [];
             DOMElements.chatHistory.innerHTML = ''; 
             const lang = DOMElements.languageSelect.value || 'en-US';
             addMessageToChat(translations[lang].welcome_message, 'ai');
-            document.querySelectorAll('#recent-chats-list button').forEach(btn => {
-                btn.classList.remove('bg-blue-200', 'font-semibold');
-            });
-        };
-        const loadChatHistory = (chatId) => {
-            const allChats = getAllChatsFromStorage();
-            if (allChats[chatId]) {
-                currentChatId = chatId;
-                localChatHistory = allChats[chatId].history || [];
-                DOMElements.chatHistory.innerHTML = '';
-                localChatHistory.forEach(msg => addMessageToChat(msg.text, msg.sender, msg.imageUrl));
-                document.querySelectorAll('#recent-chats-list button').forEach(btn => {
-                    btn.classList.toggle('bg-blue-200', btn.dataset.chatId === chatId);
-                    btn.classList.toggle('font-semibold', btn.dataset.chatId === chatId);
-                });
-            } else {
-                console.error("Chat document does not exist!");
-                startNewChat();
-            }
-        };
-        const saveChatHistory = () => {
-            if (localChatHistory.length === 0) return;
-            const allChats = getAllChatsFromStorage();
-
-            if (!currentChatId) {
-                currentChatId = `chat_${Date.now()}`;
-            }
-            
-            allChats[currentChatId] = {
-                history: localChatHistory,
-                timestamp: Date.now()
-            };
-            
-            saveAllChatsToStorage(allChats);
-            loadRecentChats(); // Refresh the sidebar
-            document.querySelectorAll('#recent-chats-list button').forEach(btn => {
-                 btn.classList.toggle('bg-blue-200', btn.dataset.chatId === currentChatId);
-                 btn.classList.toggle('font-semibold', btn.dataset.chatId === currentChatId);
+            document.querySelectorAll('#recent-chats-list > div').forEach(div => {
+                div.classList.remove('bg-blue-200', 'font-semibold');
             });
         };
 
-        const deleteThisChat = () => {
-            if (!currentChatId) {
-                showModal("Error", "No active chat selected to delete.");
-                return;
+        const loadChatHistory = async (chatId) => {
+            if (!userId) return;
+            try {
+                const chatRef = doc(db, 'users', userId, 'chats', chatId);
+                const chatSnap = await getDoc(chatRef);
+
+                if (chatSnap.exists()) {
+                    currentChatId = chatId;
+                    localChatHistory = chatSnap.data().history || [];
+                    DOMElements.chatHistory.innerHTML = '';
+                    localChatHistory.forEach(msg => addMessageToChat(msg.text, msg.sender, msg.mediaUrl, msg.mediaType));
+                    document.querySelectorAll('#recent-chats-list > div').forEach(div => {
+                        div.classList.toggle('bg-blue-200', div.dataset.chatId === chatId);
+                        div.classList.toggle('font-semibold', div.dataset.chatId === chatId);
+                    });
+                } else {
+                    console.error("Chat document does not exist!");
+                    startNewChat();
+                }
+            } catch (error) {
+                console.error("Error loading chat: ", error);
             }
-            const allChats = getAllChatsFromStorage();
-            delete allChats[currentChatId];
-            saveAllChatsToStorage(allChats);
-            loadRecentChats();
-            startNewChat();
+        };
+
+        const renameChat = async (chatId, newName) => {
+            if (!userId) return;
+            const chatRef = doc(db, 'users', userId, 'chats', chatId);
+            const chatSnap = await getDoc(chatRef);
+            if (chatSnap.exists()) {
+                const history = chatSnap.data().history;
+                if (history && history.length > 0) {
+                    history[0].text = newName;
+                    await updateDoc(chatRef, { history });
+                }
+            }
+        };
+
+        const saveChatHistory = async () => {
+            if (!userId || localChatHistory.length === 0) return;
+            
+            try {
+                if (currentChatId) {
+                    const chatRef = doc(db, 'users', userId, 'chats', currentChatId);
+                    await setDoc(chatRef, { 
+                        history: localChatHistory,
+                        timestamp: serverTimestamp() 
+                    }, { merge: true });
+                } else {
+                    const chatsCollection = collection(db, 'users', userId, 'chats');
+                    const newChatRef = await addDoc(chatsCollection, {
+                        history: localChatHistory,
+                        timestamp: serverTimestamp()
+                    });
+                    currentChatId = newChatRef.id;
+                }
+            } catch (error) {
+                console.error("Error saving chat history: ", error);
+                showModal("Error", "Could not save your chat.");
+            }
+        };
+
+        const deleteThisChat = async () => {
+            if (!currentChatId || !userId) return;
+            await deleteSpecificChat(currentChatId);
         };
         
-        const deleteSpecificChat = (chatId) => {
-            if (!chatId) {
-                showModal("Error", "Chat ID not found for deletion.");
-                return;
-            }
+        const deleteSpecificChat = async (chatId) => {
+            if (!userId || !chatId) return;
             showLoading(true);
-            const allChats = getAllChatsFromStorage();
-            delete allChats[chatId];
-            saveAllChatsToStorage(allChats);
-            
-            if (currentChatId === chatId) {
-                startNewChat();
+            try {
+                await deleteDoc(doc(db, 'users', userId, 'chats', chatId));
+                if (currentChatId === chatId) startNewChat();
+            } catch (error) {
+                console.error("Error deleting chat: ", error);
+            } finally {
+                showLoading(false);
             }
-            loadRecentChats();
-            showLoading(false);
         };
 
-        const deleteAllChats = () => {
-            saveAllChatsToStorage({});
-            loadRecentChats();
-            startNewChat();
+        const deleteAllChats = async () => {
+             if (!userId) return;
+             showLoading(true);
+             const chatsQuery = query(collection(db, 'users', userId, 'chats'));
+             const snapshot = await getDocs(chatsQuery);
+             const deletePromises = [];
+             snapshot.forEach(doc => deletePromises.push(deleteDoc(doc.ref)));
+             await Promise.all(deletePromises);
+             startNewChat();
+             showLoading(false);
         };
+
 
         const handleApiError = async (response) => {
             const errorData = await response.json();
@@ -637,14 +746,62 @@
                 showModal("API Error", `An error occurred: ${errorMessage} <br><br> <a href="https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini" target="_blank" class="text-blue-600 underline">Learn More</a>`);
             }
         };
+        
+        // --- Image Generation ---
+        const generateImageForMessage = async (prompt, messageEl) => {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'mt-2 p-4 bg-gray-200 rounded-lg text-center text-sm text-gray-500 animate-pulse';
+            placeholder.textContent = 'Generating image...';
+            messageEl.querySelector('.message-content').appendChild(placeholder);
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+            };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${geminiApiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    placeholder.textContent = 'Image generation failed.';
+                    await handleApiError(response);
+                    return;
+                }
+                const result = await response.json();
+                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                if (base64Data) {
+                    const imageUrl = `data:image/png;base64,${base64Data}`;
+                    const imgEl = document.createElement('img');
+                    imgEl.src = imageUrl;
+                    imgEl.classList.add('mt-2', 'rounded-lg', 'max-w-full', 'h-auto', 'max-h-60');
+                    placeholder.replaceWith(imgEl);
+                    
+                    if (localChatHistory.length > 0) {
+                        localChatHistory[localChatHistory.length - 1].mediaUrl = imageUrl;
+                        localChatHistory[localChatHistory.length - 1].mediaType = 'image';
+                        saveChatHistory();
+                    }
+                } else {
+                    placeholder.textContent = 'Could not generate image.';
+                }
+            } catch (error) {
+                console.error("Image generation error:", error);
+                placeholder.textContent = 'Image generation error.';
+            }
+        };
 
         // --- Core API Call Logic ---
         const handleTextQuery = async (query) => {
             if (!query.trim()) return;
             
-            addMessageToChat(query, 'user');
             localChatHistory.push({ text: query, sender: 'user'});
-            saveChatHistory();
+            addMessageToChat(query, 'user');
+            await saveChatHistory();
             showLoading(true);
             
             const selectedLanguage = DOMElements.languageSelect.options[DOMElements.languageSelect.selectedIndex].text;
@@ -654,22 +811,25 @@
                 parts: [{ text: msg.text }]
             }));
             
-            const systemPrompt = `You are Friday, a specialized AI Agri-Assistant. 
-**PRIMARY DIRECTIVE:** You ONLY answer questions related to agriculture. This includes topics like weather patterns, crop cycles, seed varieties, organic and chemical pesticides, land area calculations (acres, hectares), pond water management, irrigation techniques (drip, sprinkler, etc.), soil health, terrace farming, and general land farming.
-- If the user asks a non-agricultural question, you MUST respond with: "I can only assist with agriculture-related queries. How can I help you with your farming needs today?"
-**LANGUAGE HANDLING:**
-- The user has selected their preferred language as **${selectedLanguage}**. 
-- You MUST provide your entire response in **${selectedLanguage}**, regardless of the language of the user's query.
-**RESPONSE GUIDELINES:**
-- **Accuracy:** Provide specific, accurate information for any recommendations.
-- **Pesticide Safety:** When recommending pesticides, ALWAYS include active ingredients, dosage, and safety warnings.
-- **Formatting:** Use Markdown for clarity ('### Title', '* ' for bullets, '**bold**').
-- **Practicality:** Give actionable, step-by-step advice.
-- **Engage:** Conclude with a relevant follow-up question in ${selectedLanguage}.`;
+            const systemPrompt = `You are Friday, a specialized AI Agri-Assistant.
+
+**Core Directives:**
+1.  **Primary Focus:** Your main purpose is to provide expert-level answers to agricultural questions.
+2.  **Handling Off-Topic Queries:** If the user asks a question unrelated to agriculture, you MUST provide a brief, accurate answer. Immediately after, you MUST gently guide the conversation back to farming. For example: "The capital of France is Paris. Speaking of different regions, are you interested in what crops grow best in a specific climate?"
+3.  **Language:** The user's preferred language is **${selectedLanguage}**. Your entire response, including all text and headings, MUST be in **${selectedLanguage}**.
+4.  **No Empty Replies:** You are strictly forbidden from giving empty or incomplete answers. You MUST provide detailed, paragraph-based explanations under each heading you generate. Never return just a heading without text.
+5.  **Formatting:** Use Markdown for clarity (e.g., '### Title', '* ' for list items, '**bold**').
+6.  **Engagement:** End every response with a relevant, open-ended question to encourage further conversation.
+
+**Image Generation (Optional):**
+- If a visual aid would be highly beneficial, you can suggest an image.
+- To do this, add a new line at the very end of your response in this exact format: \`ImagePrompt: [A simple, literal 2-5 word description for the image]\`
+- **Example:** For a query on tomato blight, you might add: \`ImagePrompt: Tomato plant with blight disease\`
+- Use this only for direct, literal representations.`;
+
 
             const payload = { 
                 contents: geminiPayload, 
-                tools: [{ "google_search_retrieval": {} }],
                 systemInstruction: { parts: [{ text: systemPrompt }] } 
             };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
@@ -677,32 +837,63 @@
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) {
+                    addMessageToChat("Sorry, there was an API error. Please check your connection or API key.", 'ai');
                     await handleApiError(response);
                     return;
                 }
                 const result = await response.json();
                 const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (text) {
-                    addMessageToChat(text, 'ai');
-                    localChatHistory.push({ text: text, sender: 'ai' });
-                    saveChatHistory();
+                
+                const hasContent = text && text.replace(/#+\s*/g, '').replace(/ImagePrompt:.*/i, '').replace(/[\s*#-]/g, '').length > 10;
+
+                if (hasContent) {
+                    let aiResponseText = text;
+                    let imagePrompt = null;
+
+                    const promptRegex = /ImagePrompt:(.*)/i;
+                    const match = text.match(promptRegex);
+                    if (match && match[1]) {
+                        imagePrompt = match[1].trim();
+                        aiResponseText = text.replace(promptRegex, '').trim();
+                    }
+
+                    localChatHistory.push({ text: aiResponseText, sender: 'ai' });
+                    addMessageToChat(aiResponseText, 'ai');
+                    const allMessages = DOMElements.chatHistory.querySelectorAll('.ai-message');
+                    const latestMessageEl = allMessages[allMessages.length - 1];
+
+                    await saveChatHistory();
+
+                    if (imagePrompt && latestMessageEl) {
+                        generateImageForMessage(imagePrompt, latestMessageEl);
+                    }
+                    
                     if (isVoiceInteraction) {
-                        speakText(text, null);
+                        speakText(aiResponseText, null);
                         isVoiceInteraction = false;
                     }
-                } else { addMessageToChat("Sorry, I couldn't get a response.", 'ai'); }
-            } catch (error) { showModal("Error", `Failed to get a response: ${error.message}`); } 
+                } else { 
+                    addMessageToChat("I'm sorry, I couldn't generate a complete response for that. Could you please try rephrasing your question?", 'ai');
+                    console.error("Received empty or invalid response from API:", result);
+                }
+            } catch (error) { 
+                addMessageToChat("Sorry, an error occurred while processing your request. Please try again.", 'ai');
+                showModal("Error", `Failed to get a response: ${error.message}`);
+            } 
             finally { showLoading(false); }
         };
 
-        const handleImageAnalysis = async (base64ImageData) => { 
+        const handleFileUpload = async (file, base64Data) => { 
             showLoading(true);
-            const prompt = `Analyze this agricultural image. Identify any visible plant diseases, pests, or nutrient deficiencies. If a problem is identified, suggest organic and chemical pesticide recommendations with dosages. If it's not an agricultural image, state that you can only analyze farming-related pictures. Respond in the language of the user's UI, which is set to ${DOMElements.languageSelect.options[DOMElements.languageSelect.selectedIndex].text}.`;
-            addMessageToChat("Analyzing your image...", 'user', base64ImageData);
-            localChatHistory.push({ text: "Analyzing your image...", sender: 'user', imageUrl: base64ImageData });
+            const mediaType = file.type;
+            const prompt = `Analyze this agricultural media. Identify any visible plant diseases, pests, or nutrient deficiencies. If a problem is identified, suggest organic and chemical pesticide recommendations with dosages. If it's not an agricultural image or video, state that you can only analyze farming-related media. Respond in the language of the user's UI, which is set to ${DOMElements.languageSelect.options[DOMElements.languageSelect.selectedIndex].text}.`;
+            
+            localChatHistory.push({ text: `Analyzing media...`, sender: 'user', mediaUrl: base64Data, mediaType: mediaType });
+            addMessageToChat(`Analyzing your ${mediaType.startsWith('image') ? 'image' : 'video'}...`, 'user', base64Data, mediaType);
+            await saveChatHistory();
 
             const payload = {
-                contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/jpeg", data: base64ImageData.split(',')[1] } }] }]
+                contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: mediaType, data: base64Data.split(',')[1] } }] }]
             };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
 
@@ -715,11 +906,11 @@
                 const result = await response.json();
                 const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
                  if (text) {
-                    addMessageToChat(text, 'ai');
                     localChatHistory.push({ text: text, sender: 'ai' });
+                    addMessageToChat(text, 'ai');
                     await saveChatHistory();
-                 } else { addMessageToChat("Sorry, I could not analyze the image.", 'ai'); }
-            } catch (error) { showModal("Error", `Image analysis failed: ${error.message}`); }
+                 } else { addMessageToChat("Sorry, I could not analyze the media.", 'ai'); }
+            } catch (error) { showModal("Error", `Media analysis failed: ${error.message}`); }
             finally { showLoading(false); }
            };
 
@@ -761,7 +952,7 @@
             speechVoices = speechSynthesis.getVoices();
             DOMElements.voiceSelect.innerHTML = '';
             
-            const funkyNames = ['Nova', 'Orion', 'Lyra', 'Cove', 'Juno', 'Echo', 'Breeze', 'Axel', 'Vega', 'Zion'];
+            const funkyNames = ['Nova', 'Orion', 'Lyra', 'Cove', 'Juno', 'Echo', 'Breeze', 'Axel', 'Vega', 'Zion', 'Aura', 'Bolt', 'Celeste', 'Drake', 'Elara'];
             let nameIndex = 0;
 
             speechVoices
@@ -794,12 +985,16 @@
             currentUtterance.lang = lang;
             
             const selectedVoiceName = DOMElements.voiceSelect.value;
-            const voice = speechVoices.find(v => v.name === selectedVoiceName);
+            let voice = speechVoices.find(v => v.name === selectedVoiceName);
+            
+            if (!voice || !voice.lang.startsWith(lang.split('-')[0])) {
+                voice = speechVoices.find(v => v.lang.startsWith(lang.split('-')[0]));
+            }
 
             if (voice) {
                 currentUtterance.voice = voice;
             } else {
-                 console.warn(`No specific voice found for language: ${lang}. Using browser default.`);
+                 console.warn(`No voice found for language: ${lang}. Using browser default.`);
             }
             
             document.querySelectorAll('.play-icon').forEach(i => i.classList.remove('hidden'));
@@ -813,6 +1008,7 @@
                 currentUtterance.onerror = (e) => { 
                     console.error("Speech synthesis error:", e);
                     playIcon.classList.remove('hidden'); stopIcon.classList.add('hidden'); currentUtterance = null; 
+                    showModal("Voice Error", "Sorry, I couldn't play the voice for this language. Your browser may not support it.");
                 };
             } else {
                  currentUtterance.onend = () => { currentUtterance = null; };
@@ -843,7 +1039,10 @@
                 if (translatedText) {
                     const contentDiv = messageEl.querySelector('.message-content');
                     const speakerButton = messageEl.querySelector('.speaker-button');
-                    contentDiv.innerHTML = parseMarkdown(translatedText);
+                    const textContainer = contentDiv.querySelector('p, ul, h3') || contentDiv;
+                    
+                    textContainer.innerHTML = parseMarkdown(translatedText.trim());
+
                     if (speakerButton) {
                         speakerButton.dataset.text = encodeURIComponent(translatedText);
                     }
@@ -888,7 +1087,7 @@
             // Add event listener to close popup when clicking outside
             setTimeout(() => {
                 document.addEventListener('click', (e) => {
-                    if (!popup.contains(e.target) && e.target !== button) {
+                    if (!popup.contains(e.target) && !e.target.closest('.translate-button')) {
                         popup.remove();
                     }
                 }, { once: true });
@@ -899,22 +1098,44 @@
         DOMElements.sendButton.addEventListener('click', () => { handleTextQuery(DOMElements.userInput.value); DOMElements.userInput.value = ''; });
         DOMElements.userInput.addEventListener('keypress', (e) => e.key === 'Enter' && DOMElements.sendButton.click());
         DOMElements.apiStatusButton.addEventListener('click', checkApiStatus);
-        DOMElements.imageUpload.addEventListener('change', () => {
-            const file = DOMElements.imageUpload.files[0];
-            DOMElements.fileNameDisplay.textContent = file ? file.name : '';
-        });
-        DOMElements.uploadButton.addEventListener('click', () => { 
-            const file = DOMElements.imageUpload.files[0];
+        
+        DOMElements.fileUpload.addEventListener('change', () => {
+            const file = DOMElements.fileUpload.files[0];
+            const lang = DOMElements.languageSelect.value;
+            const langData = translations[lang] || translations['en-US'];
+
             if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => handleImageAnalysis(e.target.result);
-                reader.readAsDataURL(file);
-                 DOMElements.imageUpload.value = ''; // Reset file input
-                 DOMElements.fileNameDisplay.textContent = ''; // Clear file name display
+                DOMElements.fileNameDisplay.textContent = file.name;
+                if (file.type.startsWith('image/')) {
+                    DOMElements.uploadButton.textContent = langData['analyze_image_button'];
+                    DOMElements.uploadButton.dataset.translate = 'analyze_image_button';
+                } else if (file.type.startsWith('video/')) {
+                    DOMElements.uploadButton.textContent = langData['analyze_video_button'];
+                     DOMElements.uploadButton.dataset.translate = 'analyze_video_button';
+                } else {
+                    DOMElements.uploadButton.textContent = langData['analyze_media_button'];
+                    DOMElements.uploadButton.dataset.translate = 'analyze_media_button';
+                }
             } else {
-                showModal("No File Selected", "Please choose an image file to analyze.");
+                DOMElements.fileNameDisplay.textContent = '';
+                DOMElements.uploadButton.textContent = langData['analyze_media_button'];
+                DOMElements.uploadButton.dataset.translate = 'analyze_media_button';
             }
         });
+
+        DOMElements.uploadButton.addEventListener('click', () => { 
+            const file = DOMElements.fileUpload.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => handleFileUpload(file, e.target.result);
+                reader.readAsDataURL(file);
+                 DOMElements.fileUpload.value = ''; // Reset file input
+                 DOMElements.fileNameDisplay.textContent = ''; // Clear file name display
+            } else {
+                showModal("No File Selected", "Please choose an image or video file to analyze.");
+            }
+        });
+
         DOMElements.deleteChatButton.addEventListener('click', () => DOMElements.deleteOptionsModal.classList.remove('hidden'));
         DOMElements.deleteOptionsCancelButton.addEventListener('click', () => DOMElements.deleteOptionsModal.classList.add('hidden'));
         DOMElements.deleteThisChatOptionButton.addEventListener('click', () => {
@@ -948,11 +1169,12 @@
         });
         DOMElements.modalCancelButton.addEventListener('click', () => DOMElements.customModal.classList.add('hidden'));
         DOMElements.newChatButton.addEventListener('click', startNewChat);
-        DOMElements.menuToggle.addEventListener('click', () => DOMElements.sidebar.classList.toggle('-translate-x-full'));
+        DOMElements.sidebarToggle.addEventListener('click', () => DOMElements.body.classList.toggle('sidebar-collapsed'));
+
         DOMElements.languageSelect.addEventListener('change', (e) => {
             updateLanguage(e.target.value);
             updateRealtimeInfo();
-            startNewChat(); // Reset chat when language is changed via dropdown
+            startNewChat(); 
         });
         DOMElements.chatHistory.addEventListener('click', (e) => {
             const speakerButton = e.target.closest('.speaker-button');
@@ -965,40 +1187,56 @@
                 showLanguageSelector(translateButton);
             }
         });
-        DOMElements.recentChatsList.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            const chatButton = e.target.closest('button[data-chat-id]');
-            if (chatButton) {
-                const chatIdToDelete = chatButton.dataset.chatId;
-                modalAction = 'deleteSpecificChat';
-                DOMElements.modalOkButton.dataset.chatIdToDelete = chatIdToDelete;
-                showModal('Confirm Deletion', `Are you sure you want to delete this chat?`, true);
-            }
-        });
+      
         DOMElements.getLocationButton.addEventListener('click', getWeather);
+
+        DOMElements.searchChatsInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const chatItems = DOMElements.recentChatsList.querySelectorAll('.sidebar-item');
+            chatItems.forEach(item => {
+                const title = item.querySelector('.chat-title').textContent.toLowerCase();
+                if (title.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
 
 
         // --- Initial Page Load ---
-        userId = getUserId();
-        document.getElementById('user-id').textContent = `User ID: ${userId}`;
-        
-        const savedLang = localStorage.getItem('preferredLanguage') || 'en-US';
-        DOMElements.languageSelect.value = savedLang;
-        updateLanguage(savedLang);
-        updateRealtimeInfo();
-        setInterval(updateRealtimeInfo, 1000);
-        
-        // Load speech synthesis voices, which can be asynchronous
-        loadVoices();
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = loadVoices;
-        }
-        
-        getWeather(); // Attempt to get weather on load
-        loadRecentChats();
-        startNewChat();
-        checkApiStatus(); // Check API status on page load
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+                document.getElementById('user-id').textContent = `User ID: ${userId.substring(0,12)}...`;
+                
+                const savedLang = localStorage.getItem('preferredLanguage') || 'en-US';
+                DOMElements.languageSelect.value = savedLang;
+                updateLanguage(savedLang);
+                updateRealtimeInfo();
+                setInterval(updateRealtimeInfo, 1000);
+                
+                // Load voices after a short delay to ensure browser has populated the list
+                setTimeout(() => {
+                    loadVoices();
+                    if (speechSynthesis.onvoiceschanged !== undefined) {
+                        speechSynthesis.onvoiceschanged = loadVoices;
+                    }
+                }, 500);
+                
+                getWeather();
+                loadRecentChats(); 
+                startNewChat();
+                checkApiStatus();
+            } else {
+                signInAnonymously(auth).catch((error) => {
+                    console.error("Anonymous sign-in failed: ", error);
+                    showModal("Authentication Error", "Could not connect to the service.");
+                });
+            }
+        });
 
     </script>
 </body>
 </html>
+
