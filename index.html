@@ -2,414 +2,309 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KissanAI - Agri Assistant</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Agri AI Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Söhne:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    fontFamily: { sans: ['"Söhne"', '"Inter"', 'sans-serif'] },
                     colors: {
-                        kissan: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' }
+                        gpt: { 50: '#f9f9f9', 100: '#ececec', 200: '#e3e3e3', 800: '#343541', 900: '#202123' },
+                        agri: { 500: '#10a37f', 600: '#0d8a6a' }
                     },
-                    animation: {
-                        'fade-in': 'fadeIn 0.3s ease-out',
-                        'slide-in': 'slideIn 0.3s ease-out',
-                        'pulse-slow': 'pulse 3s infinite',
-                    },
-                    keyframes: {
-                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-                        slideIn: { '0%': { transform: 'translateY(10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
-                    }
+                    animation: { 'fade-in': 'fadeIn 0.3s ease-out' },
+                    keyframes: { fadeIn: { '0%': { opacity: '0', transform: 'translateY(5px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } } }
                 }
             }
         }
     </script>
     <style>
-        /* Custom Scrollbar */
-        .custom-scroll::-webkit-scrollbar { width: 5px; }
-        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* Voice Wave */
-        .mic-wave { position: relative; }
-        .mic-wave::after {
-            content: ''; position: absolute; width: 100%; height: 100%;
-            border-radius: 50%; border: 2px solid #10b981;
-            opacity: 0; animation: wave 1.5s infinite;
-        }
-        @keyframes wave { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.5); opacity: 0; } }
+        #sidebar, #tools-panel, #main-content { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.5); }
+        .sidebar-closed { width: 0 !important; padding: 0 !important; overflow: hidden !important; opacity: 0; }
+        .sidebar-open { width: 260px !important; opacity: 1; }
+        
+        .voice-active { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 163, 127, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(16, 163, 127, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 163, 127, 0); } }
     </style>
 </head>
-<body class="bg-gray-50 h-screen flex overflow-hidden text-gray-800 font-sans selection:bg-kissan-100 selection:text-kissan-900">
+<body class="bg-white h-screen flex text-gray-800 font-sans overflow-hidden">
 
-    <!-- LEFT SIDEBAR: Navigation & History -->
-    <aside id="sidebar-left" class="fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 flex flex-col h-full shadow-2xl lg:shadow-none">
-        <!-- Brand -->
-        <div class="h-16 flex items-center px-6 border-b border-gray-100">
-            <div class="flex items-center gap-2.5 font-bold text-xl tracking-tight text-gray-900">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-kissan-500 to-kissan-700 flex items-center justify-center text-white shadow-lg shadow-kissan-500/30">
-                    <i data-lucide="sprout" class="w-5 h-5"></i>
-                </div>
-                <span>Kissan<span class="text-kissan-600">AI</span></span>
-            </div>
-            <button onclick="app.toggleLeft()" class="ml-auto lg:hidden text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-        </div>
-
-        <!-- New Chat -->
-        <div class="p-4">
-            <button onclick="app.newChat()" class="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-xl font-medium transition-all shadow-md active:scale-95 group">
-                <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform"></i>
-                <span>New Conversation</span>
+    <!-- LEFT SIDEBAR -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 bg-gpt-900 text-white flex flex-col h-full border-r border-black/10 w-[260px] lg:relative lg:translate-x-0 transform -translate-x-full lg:transform-none">
+        <div class="p-3 flex items-center justify-between">
+            <button onclick="app.newChat()" class="flex-1 flex items-center gap-3 px-3 py-3 rounded-md border border-white/20 hover:bg-white/10 transition-colors text-sm text-white text-left">
+                <i data-lucide="plus" class="w-4 h-4"></i> New chat
+            </button>
+            <button onclick="app.toggleLeft()" class="lg:hidden ml-2 p-2 hover:bg-white/10 rounded-md text-gray-400">
+                <i data-lucide="x" class="w-5 h-5"></i>
             </button>
         </div>
-
-        <!-- History List -->
-        <div class="flex-1 overflow-y-auto custom-scroll px-3 py-2 space-y-1" id="chat-list"></div>
-
-        <!-- User Profile / Settings -->
-        <div class="p-4 border-t border-gray-100">
-            <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition cursor-pointer">
-                <div class="w-9 h-9 rounded-full bg-kissan-100 flex items-center justify-center text-kissan-700 font-bold border border-kissan-200">U</div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-gray-900 truncate">Farmer User</p>
-                    <p class="text-xs text-green-600 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Pro Plan Active</p>
-                </div>
+        <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2 no-scrollbar" id="chat-list">
+            <div class="text-xs font-semibold text-gray-500 px-3 py-2">History</div>
+        </div>
+        <div class="p-3 border-t border-white/20">
+            <div class="flex items-center gap-3 px-3 py-3 hover:bg-white/10 rounded-md cursor-pointer transition-colors">
+                <div class="w-8 h-8 bg-agri-500 rounded-sm flex items-center justify-center text-white font-bold text-xs">U</div>
+                <div class="text-sm font-medium">Agri User</div>
             </div>
         </div>
     </aside>
 
+    <!-- MOBILE OVERLAY -->
+    <div id="mobile-overlay" onclick="app.toggleLeft()" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
+
     <!-- MAIN CONTENT -->
-    <main class="flex-1 flex flex-col h-full relative min-w-0 bg-white">
-        
-        <!-- Header -->
-        <header class="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-            <div class="flex items-center gap-3">
-                <button onclick="app.toggleLeft()" class="p-2 -ml-2 rounded-lg hover:bg-gray-100 lg:hidden text-gray-600"><i data-lucide="menu" class="w-5 h-5"></i></button>
-                <div class="flex items-center gap-2">
-                    <h1 class="font-semibold text-gray-800 hidden sm:block">Agri Assistant</h1>
-                    <span class="px-2 py-0.5 rounded-full bg-kissan-50 text-kissan-700 text-[10px] font-bold uppercase tracking-wider border border-kissan-100">Gemini 1.5</span>
+    <main id="main-content" class="flex-1 flex flex-col h-full relative bg-white min-w-0">
+        <header class="h-14 flex items-center justify-between px-4 border-b border-gray-100 lg:border-none sticky top-0 bg-white/90 backdrop-blur z-40">
+            <div class="flex items-center gap-2">
+                <button onclick="app.toggleLeft()" class="p-2 hover:bg-gray-100 rounded-md text-gray-500" title="Toggle Sidebar">
+                    <i data-lucide="panel-left" class="w-5 h-5"></i>
+                </button>
+                <div class="flex items-center gap-1.5 text-gray-700 font-semibold cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-md transition">
+                    Agri Assistant <span class="text-gray-400"></span>
                 </div>
             </div>
-            
-            <div class="flex items-center gap-3">
-                <div class="relative hidden sm:block">
-                    <select id="lang-select" onchange="app.setLang(this.value)" class="appearance-none pl-3 pr-8 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-sm font-medium text-gray-700 focus:ring-2 focus:ring-kissan-500 focus:border-transparent cursor-pointer hover:bg-gray-100 transition">
-                        <option value="en-US">English</option>
-                        <option value="ml-IN">Malayalam</option>
-                        <option value="ta-IN">Tamil</option>
-                        <option value="hi-IN">Hindi</option>
-                    </select>
-                    <i data-lucide="globe" class="absolute right-2.5 top-2 w-3.5 h-3.5 text-gray-500 pointer-events-none"></i>
-                </div>
-                <button onclick="app.toggleRight()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500 relative transition-colors">
-                    <i data-lucide="layout" class="w-5 h-5"></i>
-                    <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            <div class="flex items-center gap-2">
+                <select id="lang-select" onchange="app.setLang(this.value)" class="bg-transparent text-sm font-medium text-gray-600 focus:outline-none cursor-pointer">
+                    <option value="en-US">EN</option>
+                    <option value="ml-IN">ML</option>
+                    <option value="ta-IN">TA</option>
+                </select>
+                <button onclick="app.toggleRight()" class="p-2 hover:bg-gray-100 rounded-md text-gray-500 relative" title="Tools">
+                    <i data-lucide="layout-grid" class="w-5 h-5"></i>
                 </button>
             </div>
         </header>
 
-        <!-- Chat Area -->
-        <div id="chat-container" class="flex-1 overflow-y-auto custom-scroll p-4 lg:p-8 scroll-smooth bg-[#fafafa]">
-            <div id="chat-history" class="max-w-3xl mx-auto space-y-6 pb-4">
-                <!-- Messages Injected Here -->
+        <div id="chat-container" class="flex-1 overflow-y-auto w-full scroll-smooth">
+            <div id="welcome-screen" class="flex flex-col items-center justify-center min-h-[60vh] text-center opacity-100 transition-opacity duration-300 max-w-4xl mx-auto px-4">
+                <div class="w-16 h-16 bg-white border border-gray-200 rounded-full flex items-center justify-center mb-6 shadow-sm">
+                    <i data-lucide="sprout" class="w-8 h-8 text-agri-500"></i>
+                </div>
+                <h2 class="text-2xl font-semibold text-gray-800 mb-8">How can I help your farm today?</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 w-full px-4">
+                    <button onclick="app.tool('plan')" class="p-4 border border-gray-200 rounded-xl text-left hover:bg-gray-50 text-sm text-gray-600 transition flex items-center gap-3">
+                        <span class="p-2 bg-blue-100 rounded-lg text-blue-600"><i data-lucide="calendar" class="w-4 h-4"></i></span>
+                        Create a crop plan
+                    </button>
+                    <button onclick="app.tool('pest')" class="p-4 border border-gray-200 rounded-xl text-left hover:bg-gray-50 text-sm text-gray-600 transition flex items-center gap-3">
+                        <span class="p-2 bg-red-100 rounded-lg text-red-600"><i data-lucide="bug" class="w-4 h-4"></i></span>
+                        Identify a pest
+                    </button>
+                    <button onclick="app.tool('price')" class="p-4 border border-gray-200 rounded-xl text-left hover:bg-gray-50 text-sm text-gray-600 transition flex items-center gap-3">
+                        <span class="p-2 bg-green-100 rounded-lg text-green-600"><i data-lucide="trending-up" class="w-4 h-4"></i></span>
+                        Check market prices
+                    </button>
+                    <button onclick="app.tool('soil')" class="p-4 border border-gray-200 rounded-xl text-left hover:bg-gray-50 text-sm text-gray-600 transition flex items-center gap-3">
+                        <span class="p-2 bg-amber-100 rounded-lg text-amber-600"><i data-lucide="mountain" class="w-4 h-4"></i></span>
+                        Analyze Soil
+                    </button>
+                    <button onclick="app.tool('water')" class="p-4 border border-gray-200 rounded-xl text-left hover:bg-gray-50 text-sm text-gray-600 transition flex items-center gap-3">
+                        <span class="p-2 bg-sky-100 rounded-lg text-sky-600"><i data-lucide="droplets" class="w-4 h-4"></i></span>
+                        Irrigation Advice
+                    </button>
+                    <button onclick="app.tool('tip')" class="p-4 border border-gray-200 rounded-xl text-left hover:bg-gray-50 text-sm text-gray-600 transition flex items-center gap-3">
+                        <span class="p-2 bg-yellow-100 rounded-lg text-yellow-600"><i data-lucide="lightbulb" class="w-4 h-4"></i></span>
+                        Get farming tips
+                    </button>
+                </div>
             </div>
+            <div id="chat-history" class="max-w-3xl mx-auto px-4 py-8 space-y-6"></div>
+            <div class="h-24 w-full"></div>
         </div>
 
-        <!-- Input Area -->
-        <div class="p-4 lg:p-6 bg-white border-t border-gray-100">
-            <div class="max-w-3xl mx-auto space-y-4">
-                
-                <!-- Quick Actions (Pills) -->
-                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                    <button onclick="app.tool('plan')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 transition whitespace-nowrap"><i data-lucide="calendar" class="w-3 h-3"></i> Crop Plan</button>
-                    <button onclick="app.tool('recipe')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-100 transition whitespace-nowrap"><i data-lucide="utensils" class="w-3 h-3"></i> Recipes</button>
-                    <button onclick="app.tool('pest')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition whitespace-nowrap"><i data-lucide="bug" class="w-3 h-3"></i> Pest ID</button>
-                    <button onclick="app.tool('tip')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-100 transition whitespace-nowrap"><i data-lucide="lightbulb" class="w-3 h-3"></i> Tip</button>
+        <div class="w-full border-t border-transparent bg-gradient-to-t from-white via-white to-transparent pt-10 pb-6 px-4 absolute bottom-0 z-30">
+            <div class="max-w-3xl mx-auto relative">
+                <div id="file-preview" class="hidden mb-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 text-xs text-gray-600 flex items-center justify-between w-fit">
+                    <span id="file-name" class="truncate max-w-[200px]"></span>
+                    <button onclick="app.clearFile()" class="ml-2 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>
-
-                <!-- Search Bar -->
-                <div class="relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-kissan-500 focus-within:border-transparent">
-                    <textarea id="user-input" rows="1" placeholder="Ask KissanAI anything..." 
-                        class="w-full bg-transparent border-none text-gray-800 placeholder-gray-400 text-sm px-4 py-4 pr-32 focus:ring-0 resize-none max-h-32 rounded-2xl"
-                        onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();app.send()}"></textarea>
-                    
-                    <div class="absolute right-2 bottom-2 flex items-center gap-1">
-                        <button onclick="$('file-upload').click()" class="p-2 text-gray-400 hover:text-kissan-600 hover:bg-kissan-50 rounded-lg transition" title="Attach Image">
-                            <i data-lucide="image-plus" class="w-5 h-5"></i>
-                            <input type="file" id="file-upload" class="hidden" onchange="app.handleFile(this)" accept="image/*">
-                            <span id="file-dot" class="absolute top-2 right-2 w-2 h-2 bg-kissan-500 rounded-full border border-white hidden"></span>
-                        </button>
-                        <button onclick="app.toggleVoice()" class="p-2 text-gray-400 hover:text-kissan-600 hover:bg-kissan-50 rounded-lg transition" title="Voice Input">
-                            <i data-lucide="mic" class="w-5 h-5"></i>
-                        </button>
-                        <button onclick="app.send()" class="p-2 bg-kissan-600 hover:bg-kissan-700 text-white rounded-xl shadow-sm transition-transform active:scale-95">
-                            <i data-lucide="arrow-up" class="w-5 h-5"></i>
-                        </button>
-                    </div>
+                <div class="relative flex items-end w-full p-3 bg-white border border-gray-300 rounded-2xl shadow-sm focus-within:ring-1 focus-within:ring-agri-500 focus-within:border-agri-500 transition-all">
+                    <button onclick="$('file-upload').click()" class="p-2 text-gray-400 hover:text-gray-600 transition-colors" title="Attach">
+                        <i data-lucide="paperclip" class="w-5 h-5"></i>
+                        <input type="file" id="file-upload" class="hidden" onchange="app.handleFile(this)" accept="image/*">
+                    </button>
+                    <textarea id="user-input" rows="1" placeholder="Send a message..." class="flex-1 max-h-[200px] py-2 px-3 bg-transparent border-none focus:ring-0 text-gray-800 placeholder-gray-400 resize-none text-base" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();app.send()}"></textarea>
+                    <button onclick="app.toggleVoice()" class="p-2 text-gray-400 hover:text-gray-600 transition-colors" title="Voice">
+                        <i data-lucide="mic" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="app.send()" id="send-btn" class="p-2 bg-agri-500 text-white rounded-lg hover:bg-agri-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all" disabled>
+                        <i data-lucide="arrow-up" class="w-5 h-5"></i>
+                    </button>
                 </div>
-                <div id="file-name" class="text-xs font-medium text-kissan-600 px-2 h-4"></div>
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-400">KissanAI can make mistakes. Consider checking important information.</p>
+                <div class="text-center mt-2">
+                    <p class="text-[10px] text-gray-400">Agri AI can make mistakes. Verify important info.</p>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- RIGHT SIDEBAR: Knowledge Panel (Tools) -->
-    <aside id="sidebar-right" class="fixed inset-y-0 right-0 z-40 w-80 bg-white border-l border-gray-200 transform translate-x-full lg:translate-x-0 transition-transform duration-300 flex flex-col h-full shadow-2xl lg:shadow-none">
-        <div class="h-16 flex items-center justify-between px-6 border-b border-gray-100">
-            <h2 class="font-bold text-gray-800 flex items-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-kissan-500"></i> Tools & Info</h2>
-            <button onclick="app.toggleRight()" class="lg:hidden text-gray-400"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <!-- RIGHT SIDEBAR (Tools) -->
+    <aside id="tools-panel" class="fixed inset-y-0 right-0 z-50 w-80 bg-white border-l border-gray-200 transform translate-x-full lg:relative lg:translate-x-0 flex flex-col h-full lg:flex transition-transform duration-300">
+        <div class="h-14 flex items-center justify-between px-4 border-b border-gray-100">
+            <h2 class="font-semibold text-gray-800 text-sm">Assistant Tools</h2>
+            <button onclick="app.toggleRight()" class="text-gray-400 hover:text-gray-600 lg:hidden"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
-        
-        <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-4 bg-gray-50/50">
+        <div class="flex-1 overflow-y-auto p-4 space-y-6 bg-gray-50 custom-scroll">
             
-            <!-- Weather Widget -->
-            <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-5 text-white shadow-lg shadow-blue-500/20 relative overflow-hidden group cursor-pointer" onclick="app.getWeather()">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-white/20 transition"></div>
-                <div class="relative z-10">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-blue-100 text-xs font-semibold uppercase tracking-wider">Live Weather</p>
-                            <h3 id="loc-txt" class="font-bold text-lg mt-0.5 flex items-center gap-1">Detect <i data-lucide="map-pin" class="w-3 h-3"></i></h3>
-                        </div>
-                        <i data-lucide="cloud-sun" class="w-8 h-8 text-blue-100"></i>
-                    </div>
-                    <div class="flex items-end gap-2">
-                        <span id="w-temp" class="text-4xl font-bold">--°</span>
-                        <span id="w-desc" class="text-sm text-blue-100 mb-1.5 font-medium capitalize">Unknown</span>
-                    </div>
-                </div>
+            <!-- Weather Card Removed as requested -->
+
+            <!-- Market Prices Card -->
+            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div class="flex items-center gap-2 mb-3 text-sm font-semibold text-gray-700"><i data-lucide="trending-up" class="w-4 h-4 text-green-600"></i> Market Prices</div>
+                <div id="prices-list" class="space-y-2"></div>
             </div>
 
-            <!-- Terrace Farming -->
-            <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <div class="flex items-center gap-2 mb-2 text-orange-700">
-                    <div class="p-1.5 bg-orange-100 rounded-lg"><i data-lucide="home" class="w-4 h-4"></i></div>
-                    <span class="font-bold text-sm">Terrace Farming</span>
-                </div>
-                <p class="text-xs text-gray-500 mb-3 leading-relaxed">Expert guide to setting up your own organic rooftop garden.</p>
-                <button onclick="app.tool('plan')" class="w-full py-2 text-xs font-bold text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-100 transition">Open Guide</button>
+            <!-- Pesticides Prices Card -->
+            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div class="flex items-center gap-2 mb-3 text-sm font-semibold text-gray-700"><i data-lucide="flask-conical" class="w-4 h-4 text-purple-600"></i> Pesticides</div>
+                <div id="pesticides-list" class="space-y-2 text-sm"></div>
             </div>
 
-            <!-- Market Prices -->
-            <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                <div class="flex items-center gap-2 mb-3 text-emerald-700">
-                    <div class="p-1.5 bg-emerald-100 rounded-lg"><i data-lucide="trending-up" class="w-4 h-4"></i></div>
-                    <span class="font-bold text-sm">Market Rates</span>
-                </div>
-                <div id="prices-list" class="space-y-2">
-                    <!-- Prices -->
-                </div>
+            <!-- Terrace Farming Card -->
+            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm bg-gradient-to-br from-orange-50 to-white">
+                <div class="flex items-center gap-2 mb-2 font-semibold text-sm text-gray-900"><i data-lucide="flower-2" class="w-4 h-4 text-orange-500"></i> Terrace Farming</div>
+                <p class="text-xs text-gray-500 mb-3 leading-relaxed">Complete guide to soil mix, waterproofing, and container selection.</p>
+                <button onclick="app.tool('plan')" class="w-full py-2 text-xs font-bold text-orange-700 bg-white border border-orange-100 rounded-lg hover:bg-orange-50 transition">View Guide</button>
             </div>
 
-            <!-- Support -->
-            <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                <div class="flex items-center gap-2 mb-3 text-indigo-700">
-                    <div class="p-1.5 bg-indigo-100 rounded-lg"><i data-lucide="life-buoy" class="w-4 h-4"></i></div>
-                    <span class="font-bold text-sm">Farmer Support</span>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <a href="tel:1800123" class="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-indigo-50 rounded-xl border border-gray-100 transition group text-center">
-                        <i data-lucide="phone" class="w-4 h-4 text-gray-400 group-hover:text-indigo-600 mb-1"></i>
-                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-indigo-700">Call Us</span>
-                    </a>
-                    <a href="mailto:help@kissan.ai" class="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-indigo-50 rounded-xl border border-gray-100 transition group text-center">
-                        <i data-lucide="mail" class="w-4 h-4 text-gray-400 group-hover:text-indigo-600 mb-1"></i>
-                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-indigo-700">Email</span>
-                    </a>
+            <!-- Customer Support Card -->
+            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div class="flex items-center gap-2 mb-3 font-semibold text-sm text-gray-700"><i data-lucide="headset" class="w-4 h-4 text-blue-500"></i> Support 24/7</div>
+                <div class="space-y-2">
+                    <a href="tel:1800123" class="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition text-xs font-medium text-gray-700"><i data-lucide="phone" class="w-3.5 h-3.5 text-gray-400"></i> 1800-123-AGRI</a>
+                    <a href="mailto:support@agri.ai" class="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition text-xs font-medium text-gray-700"><i data-lucide="mail" class="w-3.5 h-3.5 text-gray-400"></i> support@agri.ai</a>
                 </div>
             </div>
         </div>
     </aside>
 
-    <!-- Voice Modal Overlay -->
-    <div id="voice-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex-col items-center justify-center transition-opacity opacity-0">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center text-center max-w-sm mx-4 w-full relative overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-b from-kissan-50 to-white -z-10"></div>
-            <button onclick="app.stopVoice()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            
-            <div class="w-20 h-20 bg-kissan-100 rounded-full flex items-center justify-center text-kissan-600 mb-6 mic-wave">
-                <i data-lucide="mic" class="w-8 h-8"></i>
-            </div>
-            <h3 class="text-xl font-bold text-gray-900 mb-2">Listening...</h3>
-            <p class="text-sm text-gray-500 mb-6">Ask me about your crops, weather, or prices.</p>
-            <button onclick="app.stopVoice()" class="w-full py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition">Cancel</button>
+    <div id="voice-modal" class="fixed inset-0 bg-white/95 z-[60] hidden flex-col items-center justify-center transition-opacity opacity-0">
+        <div class="relative w-32 h-32 flex items-center justify-center mb-8">
+            <div class="w-20 h-20 bg-agri-500 rounded-full flex items-center justify-center voice-active text-white"><i data-lucide="mic" class="w-8 h-8"></i></div>
         </div>
+        <h3 class="text-2xl font-semibold text-gray-800 mb-2">Listening...</h3>
+        <button onclick="app.stopVoice()" class="mt-8 px-6 py-2 rounded-full border border-gray-300 hover:bg-gray-100 text-sm font-medium">Cancel</button>
     </div>
 
     <script>
-        const API_KEY = "AIzaSyBmSCkr-MwYJL0D7eDyD9UhsSQmK-AZtZE", MODEL = "gemini-1.5-flash";
+        const API_KEY = "AIzaSyBmSCkr-MwYJL0D7eDyD9UhsSQmK-AZtZE"; 
+        const MODEL = "gemini-2.5-flash";
         const $ = id => document.getElementById(id);
         const ls = localStorage;
-        lucide.createIcons();
-
-        // Localization
-        const translations = {
-            'en-US': { prices: [{n:'Tomato',p:'₹30'},{n:'Onion',p:'₹25'},{n:'Rice',p:'₹45'}] },
-            'ml-IN': { prices: [{n:'തക്കാളി',p:'₹30'},{n:'സവാള',p:'₹25'},{n:'അരി',p:'₹45'}] },
-            'ta-IN': { prices: [{n:'தக்காளி',p:'₹30'},{n:'வெங்காயம்',p:'₹25'},{n:'அரிசி',p:'₹45'}] },
-            'hi-IN': { prices: [{n:'टमाटर',p:'₹30'},{n:'प्याज',p:'₹25'},{n:'चावल',p:'₹45'}] }
-        };
-
+        
         const app = {
-            chatId: null, chats: JSON.parse(ls.getItem('kissan_chats') || '{}'), history: [], lang: 'en-US', media: null,
-            
-            init() { 
-                this.renderChats(); this.newChat(); this.updateDash(); 
-                if(ls.getItem('last_lang')) { $('lang-select').value = ls.getItem('last_lang'); this.setLang(ls.getItem('last_lang')); }
-                // Auto-detect location if allowed
-                if(navigator.geolocation) this.getWeather(true);
+            chatId: null, chats: JSON.parse(ls.getItem('agri_chats_v2') || '{}'), history: [], lang: 'en-US', media: null,
+            init() {
+                this.renderSidebar(); this.newChat(); this.updatePrices();
+                if(window.innerWidth < 1024) { $('sidebar').classList.add('-translate-x-full'); $('mobile-overlay').classList.add('hidden'); }
+                if(ls.getItem('pref_lang')) { $('lang-select').value = ls.getItem('pref_lang'); this.setLang(ls.getItem('pref_lang')); }
+                lucide.createIcons();
             },
-            
-            toggleLeft() { $('sidebar-left').classList.toggle('-translate-x-full'); },
-            toggleRight() { $('sidebar-right').classList.toggle('translate-x-full'); $('sidebar-right').classList.toggle('hidden-lg'); },
-            
-            setLang(l) { this.lang = l; ls.setItem('last_lang', l); this.updateDash(); },
-            
+            toggleLeft() { 
+                const sb = $('sidebar');
+                if(window.innerWidth >= 1024) {
+                    if(sb.classList.contains('sidebar-closed')) {
+                        sb.classList.remove('sidebar-closed');
+                    } else {
+                        sb.classList.add('sidebar-closed');
+                    }
+                } else {
+                    sb.classList.toggle('-translate-x-full'); $('mobile-overlay').classList.toggle('hidden');
+                }
+            },
+            toggleRight() { const p = $('tools-panel'); if(window.innerWidth>=1024) { p.classList.toggle('lg:flex'); p.classList.toggle('lg:hidden'); } else { p.classList.toggle('translate-x-full'); } },
+            setLang(l) { this.lang = l; ls.setItem('pref_lang', l); this.updatePrices(); },
             newChat() {
-                this.chatId = Date.now().toString(); this.history = [];
-                $('chat-history').innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-20 text-center animate-slide-in">
-                        <div class="w-16 h-16 bg-gradient-to-br from-kissan-100 to-kissan-50 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-kissan-100">
-                            <i data-lucide="sprout" class="w-8 h-8 text-kissan-600"></i>
-                        </div>
-                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Welcome to KissanAI</h2>
-                        <p class="text-gray-500 max-w-sm text-sm leading-relaxed">Your personal AI agricultural expert. I can analyze plant diseases, suggest crop plans, and provide market insights.</p>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-8 max-w-lg w-full px-4">
-                            <button onclick="app.tool('plan')" class="p-3 text-left bg-white border border-gray-100 rounded-xl hover:border-kissan-200 hover:shadow-sm transition text-xs text-gray-600">
-                                <span class="block font-bold text-gray-800 mb-0.5">📅 Crop Plan</span>
-                                Create a schedule for Tomato
-                            </button>
-                            <button onclick="app.tool('pest')" class="p-3 text-left bg-white border border-gray-100 rounded-xl hover:border-kissan-200 hover:shadow-sm transition text-xs text-gray-600">
-                                <span class="block font-bold text-gray-800 mb-0.5">🐞 Identify Pest</span>
-                                Upload photo or describe pest
-                            </button>
-                        </div>
-                    </div>`;
-                this.media = null; $('file-dot').classList.add('hidden'); $('file-name').innerText = ''; $('file-upload').value = '';
-                this.renderChats();
-                if(window.innerWidth < 1024) $('sidebar-left').classList.add('-translate-x-full');
+                this.chatId = Date.now().toString(); this.history = []; $('chat-history').innerHTML = ''; $('welcome-screen').classList.remove('hidden');
+                this.clearFile(); this.renderSidebar(); if(window.innerWidth<1024) this.toggleLeft(); lucide.createIcons();
             },
-            
             loadChat(id) {
                 if(!this.chats[id]) return; this.chatId = id; this.history = this.chats[id].msgs || [];
-                $('chat-history').innerHTML = ''; this.history.forEach(m => this.appendMsg(m.role, m.text, m.img));
-                this.renderChats(); if(window.innerWidth < 1024) $('sidebar-left').classList.add('-translate-x-full');
+                $('chat-history').innerHTML = ''; $('welcome-screen').classList.add('hidden');
+                this.history.forEach(m => this.appendMsg(m.role, m.text, m.img));
+                this.renderSidebar(); if(window.innerWidth<1024) this.toggleLeft();
             },
-            
-            renderChats() {
+            renderSidebar() {
                 const list = Object.entries(this.chats).sort((a,b)=>b[1].time-a[1].time);
-                $('chat-list').innerHTML = list.length ? list.map(([id,c])=>
-                    `<div onclick="app.loadChat('${id}')" class="group p-3 rounded-xl cursor-pointer hover:bg-gray-50 flex items-center gap-3 transition-all ${id===this.chatId?'bg-kissan-50 border border-kissan-100':''}">
-                        <i data-lucide="message-square" class="w-4 h-4 ${id===this.chatId?'text-kissan-600':'text-gray-400 group-hover:text-gray-600'}"></i>
-                        <div class="truncate text-sm font-medium flex-1 ${id===this.chatId?'text-kissan-900':'text-gray-600'}">${c.title||'New Chat'}</div>
-                        <button onclick="event.stopPropagation(); app.deleteChat('${id}')" class="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 hover:text-red-500 rounded-lg text-gray-400 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                    </div>`).join('') : '<div class="text-center text-xs text-gray-400 mt-10">No recent history</div>';
-                lucide.createIcons();
+                $('chat-list').innerHTML = `<div class="text-xs font-semibold text-gray-500 px-3 py-2">History</div>` + (list.length ? list.map(([id,c])=>`<button onclick="app.loadChat('${id}')" class="w-full text-left px-3 py-2 rounded-md hover:bg-white/10 text-sm text-gray-300 truncate transition ${id===this.chatId?'bg-white/10 text-white':''}">${c.title||'New Chat'}</button>`).join('') : '<div class="px-3 text-sm text-gray-500">No chats yet</div>');
             },
-            
-            deleteChat(id) { 
-                if(confirm('Delete this conversation?')) { 
-                    delete this.chats[id || this.chatId]; ls.setItem('kissan_chats', JSON.stringify(this.chats)); 
-                    if(!id || id === this.chatId) this.newChat(); else this.renderChats();
-                } 
-            },
-            
-            handleFile(i) { const f=i.files[0]; if(!f)return; $('file-dot').classList.remove('hidden'); $('file-name').innerText=f.name; const r=new FileReader(); r.onload=e=>this.media={data:e.target.result.split(',')[1],mime:f.type,url:e.target.result}; r.readAsDataURL(f); },
-            
+            handleFile(i) { const f=i.files[0]; if(!f)return; $('file-preview').classList.remove('hidden'); $('file-name').innerText=f.name; const r=new FileReader(); r.onload=e=>{this.media={data:e.target.result.split(',')[1],mime:f.type,url:e.target.result}; $('send-btn').disabled=false; $('send-btn').classList.remove('opacity-40');}; r.readAsDataURL(f); },
+            clearFile() { this.media=null; $('file-upload').value=''; $('file-preview').classList.add('hidden'); },
             appendMsg(role, text, img) {
-                if($('chat-history').innerHTML.includes('Welcome to KissanAI')) $('chat-history').innerHTML = '';
-                const u = role==='user';
-                const html = `
-                    <div class="flex w-full mb-6 ${u?'justify-end':'justify-start'} animate-fade-in group">
-                        <div class="max-w-[85%] lg:max-w-[75%] flex gap-4 ${u?'flex-row-reverse':''}">
-                            <div class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm ${u?'bg-gray-800':'bg-kissan-600'}">
-                                ${u?'U':'<i data-lucide="sprout" class="w-4 h-4"></i>'}
-                            </div>
-                            <div class="flex flex-col gap-1 ${u?'items-end':'items-start'}">
-                                <div class="px-5 py-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${u?'bg-gray-800 text-white rounded-tr-sm':'bg-white text-gray-700 border border-gray-100 rounded-tl-sm'}">
-                                    ${text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>')}
-                                    ${img ? `<img src="${img}" class="mt-3 rounded-lg max-h-56 border border-white/20">` : ''}
-                                </div>
-                                ${!u ? `<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity px-1">
-                                    <button onclick="navigator.clipboard.writeText(\`${text.replace(/"/g, '&quot;')}\`)" class="p-1 text-gray-400 hover:text-kissan-600" title="Copy"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
-                                </div>` : ''}
-                            </div>
-                        </div>
-                    </div>`;
-                $('chat-history').insertAdjacentHTML('beforeend', html); 
-                $('chat-container').scrollTop = $('chat-container').scrollHeight;
-                lucide.createIcons();
+                $('welcome-screen').classList.add('hidden'); const u=role==='user';
+                $('chat-history').insertAdjacentHTML('beforeend', `<div class="group w-full text-gray-800 border-b border-black/5 dark:border-white/5 ${u?'bg-white':'bg-gray-50'}"><div class="text-base gap-4 md:gap-6 md:max-w-2xl lg:max-w-xl xl:max-w-3xl flex p-4 m-auto"><div class="flex-shrink-0 flex flex-col relative items-end"><div class="w-6 h-6 rounded-sm flex items-center justify-center ${u?'bg-gray-500':'bg-agri-500'} text-white">${u?'U':'<i data-lucide="sprout" class="w-4 h-4"></i>'}</div></div><div class="relative flex-1 overflow-hidden"><div class="font-bold text-sm mb-1 opacity-90">${u?'You':'Agri AI'}</div><div class="prose prose-sm max-w-none leading-7">${text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>')}</div>${img?`<img src="${img}" class="mt-3 rounded-md max-h-60 border border-gray-200">`:''}</div></div></div>`);
+                $('chat-container').scrollTop=$('chat-container').scrollHeight; lucide.createIcons();
             },
-            
             async send() {
                 const txt = $('user-input').value.trim(); if(!txt && !this.media) return;
-                $('user-input').value=''; this.history.push({role:'user',text:txt,img:this.media?this.media.url:null});
-                this.appendMsg('user', txt, this.media?this.media.url:null);
-                
-                const loadId = 'l-'+Date.now(); 
-                $('chat-history').insertAdjacentHTML('beforeend', `<div id="${loadId}" class="flex mb-6 gap-4 animate-fade-in"><div class="w-8 h-8 rounded-full bg-kissan-600 flex items-center justify-center text-white"><i data-lucide="sprout" class="w-4 h-4"></i></div><div class="bg-white border border-gray-100 px-5 py-4 rounded-2xl rounded-tl-sm text-gray-500 text-sm shadow-sm flex items-center gap-1">KissanAI is thinking<span class="animate-bounce">.</span><span class="animate-bounce delay-100">.</span><span class="animate-bounce delay-200">.</span></div></div>`); 
-                lucide.createIcons();
-                $('chat-container').scrollTop=$('chat-container').scrollHeight;
-
+                $('user-input').value=''; $('user-input').style.height='auto'; $('send-btn').disabled=true; $('send-btn').classList.add('opacity-40');
+                this.history.push({role:'user',text:txt,img:this.media?this.media.url:null}); this.appendMsg('user',txt,this.media?this.media.url:null);
+                const lid='l-'+Date.now(); $('chat-history').insertAdjacentHTML('beforeend', `<div id="${lid}" class="w-full bg-gray-50 p-4 border-b border-black/5"><div class="max-w-3xl m-auto flex gap-4"><div class="w-6 h-6 bg-agri-500 rounded-sm flex items-center justify-center text-white"><i data-lucide="sprout" class="w-4 h-4"></i></div><div class="animate-pulse flex gap-1 items-center text-gray-500">Thinking<span>.</span><span>.</span><span>.</span></div></div></div>`); $('chat-container').scrollTop=$('chat-container').scrollHeight; lucide.createIcons();
                 try {
-                    const ctx = this.history.slice(-4, -1).map(h=>({role:h.role==='user'?'user':'model',parts:[{text:h.text}]}));
-                    const msg = [{role:'user',parts:[{text:`You are KissanAI, an expert agricultural assistant. Answer in ${this.lang} concisely. Query: ${txt}`}, ...(this.media?[{inlineData:{mimeType:this.media.mime,data:this.media.data}}]:[])]}];
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[...ctx,...msg]})});
-                    const d = await res.json();
-                    $(loadId).remove();
-                    const r = d.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble analyzing that. Please try again.";
-                    this.history.push({role:'model',text:r}); this.appendMsg('model', r);
-                    this.chats[this.chatId] = {title:this.history[0].text.substring(0,30), msgs:this.history, time:Date.now()};
-                    ls.setItem('kissan_chats', JSON.stringify(this.chats)); this.renderChats();
-                    this.media=null; $('file-dot').classList.add('hidden'); $('file-name').innerText=''; $('file-upload').value='';
-                } catch(e) { $(loadId).remove(); this.appendMsg('model', "Network error. Please verify your connection."); }
+                    // Safe History Mapping
+                    const ctx = this.history.slice(-6, -1).map(h => ({
+                        role: h.role === 'user' ? 'user' : 'model',
+                        parts: [{ text: h.text || " " }] // Ensure text is never empty
+                    }));
+                    
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [...ctx, {
+                                role: 'user',
+                                parts: [
+                                    { text: `You are Agri AI. Answer in ${this.lang}. Query: ${txt}` },
+                                    ...(this.media ? [{ inlineData: { mimeType: this.media.mime, data: this.media.data } }] : [])
+                                ]
+                            }]
+                        })
+                    });
+                    const d=await res.json(); 
+                    $(lid).remove(); 
+                    const r=d.candidates?.[0]?.content?.parts?.[0]?.text||"I couldn't process that request. Please try again.";
+                    this.history.push({role:'model',text:r}); this.appendMsg('model',r);
+                    this.chats[this.chatId]={title:this.history[0].text.substring(0,30)||"New Chat",msgs:this.history,time:Date.now()}; ls.setItem('agri_chats_v2',JSON.stringify(this.chats)); this.renderSidebar(); this.clearFile();
+                } catch(e) { $(lid).remove(); this.appendMsg('model',"Connection Error. Please check your internet."); console.error(e); }
             },
-            
-            async tool(t) {
-                const p = t==='plan'?prompt('Enter Crop Name:'):t==='recipe'?prompt('Harvest Item?'):t==='pest'?prompt('Describe Pest:'):'Farming Tip';
-                if(!p) return;
-                const q = t==='plan'?`Detailed crop plan for ${p}`:t==='recipe'?`Cooking recipes for ${p}`:t==='pest'?`Identify pest: ${p}`:`Farming tip`;
-                $('user-input').value = q; this.send();
+            async tool(type) {
+                // Immediate action without prompt
+                let query = "";
+                switch(type) {
+                    case 'plan': query = "Help me create a crop plan. What details do you need?"; break;
+                    case 'pest': query = "I need to identify a pest. I can upload a photo or describe it."; break;
+                    case 'price': query = "What are the current market prices for common vegetables?"; break;
+                    case 'tip': query = "Give me a valuable farming tip for the current season."; break;
+                    case 'soil': query = "How can I analyze my soil? What crops are best for red soil?"; break;
+                    case 'water': query = "Give me general irrigation advice for hot weather."; break;
+                }
+                if(query) { $('user-input').value = query; this.send(); }
             },
-            
-            getWeather(silent=false) {
-                if(!navigator.geolocation) { if(!silent) alert('Enable location'); return; }
-                if(!silent) $('loc-txt').innerHTML = 'Loading...';
-                navigator.geolocation.getCurrentPosition(async pos => {
-                    const {latitude:lat, longitude:lon} = pos.coords;
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:`Return JSON only: weather for lat ${lat} lon ${lon}. Format: {"temp": "25°", "desc": "Sunny", "loc": "City"}`}]}]})});
-                    const d = await res.json();
-                    const w = JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim());
-                    $('loc-txt').innerHTML = `${w.loc} <i data-lucide="map-pin" class="w-3 h-3"></i>`; $('w-temp').innerText = w.temp; $('w-desc').innerText = w.desc;
-                    lucide.createIcons();
-                }, () => $('loc-txt').innerText = "Locate Me");
+            updatePrices() {
+                const p=[{n:'Tomato',p:'₹30/kg'},{n:'Onion',p:'₹25/kg'},{n:'Potato',p:'₹40/kg'}], pest=[{n:'Neem Oil',p:'₹450/L'},{n:'Imidacloprid',p:'₹800/L'}];
+                $('prices-list').innerHTML=p.map(i=>`<div class="flex justify-between items-center p-2 rounded bg-gray-50"><span class="text-xs font-medium text-gray-700">${i.n}</span><span class="text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded">${i.p}</span></div>`).join('');
+                $('pesticides-list').innerHTML=pest.map(i=>`<div class="flex justify-between items-center p-2 rounded bg-gray-50"><span class="text-xs font-medium text-gray-700">${i.n}</span><span class="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-1 rounded">${i.p}</span></div>`).join('');
+                lucide.createIcons();
             },
-            
-            updateDash() {
-                const d = translations[this.lang] || translations['en-US'];
-                $('prices-list').innerHTML = d.prices.map(p=>`
-                    <div class="flex justify-between items-center p-2.5 rounded-xl bg-gray-50 border border-gray-100 hover:border-kissan-200 transition">
-                        <span class="font-medium text-gray-700 text-xs">${p.n}</span>
-                        <span class="font-bold text-kissan-700 text-xs bg-white border border-kissan-100 px-2 py-0.5 rounded-md shadow-sm">${p.p}</span>
-                    </div>`).join('');
-            },
-            
-            rec: new (window.SpeechRecognition||window.webkitSpeechRecognition)(),
-            toggleVoice() { $('voice-modal').classList.remove('hidden'); setTimeout(()=>$('voice-modal').classList.remove('opacity-0'),10); this.rec.lang=this.lang; this.rec.start(); },
-            stopVoice() { this.rec.stop(); $('voice-modal').classList.add('opacity-0'); setTimeout(()=>$('voice-modal').classList.add('hidden'),300); }
+            rec: ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) ? new (window.SpeechRecognition || window.webkitSpeechRecognition)() : null,
+            toggleVoice() { if(!this.rec) return alert("Voice not supported."); $('voice-modal').classList.remove('hidden'); setTimeout(()=>$('voice-modal').classList.remove('opacity-0'),10); this.rec.lang=this.lang; this.rec.start(); },
+            stopVoice() { if(this.rec) this.rec.stop(); $('voice-modal').classList.add('opacity-0'); setTimeout(()=>$('voice-modal').classList.add('hidden'),300); }
         };
-        app.rec.onresult = e => { $('user-input').value = e.results[0][0].transcript; app.stopVoice(); app.send(); };
+        
+        if(app.rec) { app.rec.onresult=e=>{ $('user-input').value=e.results[0][0].transcript; app.stopVoice(); app.send(); }; app.rec.onerror=()=>app.stopVoice(); }
         app.init();
+        $('user-input').addEventListener('input', e=> { $('send-btn').disabled=!e.target.value.trim(); if(e.target.value.trim()) $('send-btn').classList.remove('opacity-40'); else $('send-btn').classList.add('opacity-40'); });
     </script>
 </body>
 </html>
