@@ -3,1377 +3,413 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agri-Assistant</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>KissanAI - Agri Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #e0f2fe, #f0fdf4, #fefce8);
-            color: #1e3a8a; /* A darker blue for better contrast */
-        }
-        .main-container {
-            max-width: 1400px;
-            height: calc(100vh - 2rem);
-        }
-        .chat-container {
-            background-color: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border-radius: 1.5rem; /* More rounded */
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-        .message-box {
-            padding: 0.75rem 1.25rem;
-            margin-bottom: 0.75rem;
-            max-width: 80%;
-            word-wrap: break-word;
-            position: relative;
-            border-radius: 1rem;
-            animation: message-fade-in 0.4s ease-out forwards;
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        @keyframes message-fade-in {
-            to {
-                opacity: 1;
-                transform: translateY(0);
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    colors: {
+                        kissan: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                        'pulse-slow': 'pulse 3s infinite',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideIn: { '0%': { transform: 'translateY(10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                    }
+                }
             }
         }
-
-        .user-message {
-            background: linear-gradient(120deg, #3b82f6, #60a5fa);
-            color: #ffffff;
-            align-self: flex-end;
-            border-bottom-right-radius: 0.25rem;
-            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+        
+        /* Voice Wave */
+        .mic-wave { position: relative; }
+        .mic-wave::after {
+            content: ''; position: absolute; width: 100%; height: 100%;
+            border-radius: 50%; border: 2px solid #10b981;
+            opacity: 0; animation: wave 1.5s infinite;
         }
-        .ai-message {
-            background-color: #ffffff;
-            color: #374151;
-            align-self: flex-start;
-            border: 1px solid #e5e7eb;
-            border-bottom-left-radius: 0.25rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-        .ai-message h3 { font-size: 1.1rem; font-weight: bold; margin-bottom: 0.5rem; color: #1d4ed8; }
-        .ai-message ul { list-style-type: '🌿'; padding-left: 1.5rem; margin-top: 0.5rem; }
-        .ai-message li { margin-bottom: 0.25rem; padding-left: 0.5rem; }
-        .message-box strong { display: block; font-size: 0.8rem; color: rgba(255,255,255,0.8); }
-        .ai-message strong { color: #4b5563; }
-
-        .btn-primary, .btn-secondary {
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .btn-primary:hover, .btn-secondary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
-
-        #loading-modal .loader {
-            display: flex;
-            gap: 0.5rem;
-        }
-        #loading-modal .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: #3b82f6;
-            animation: pulse 1.5s infinite ease-in-out;
-        }
-        #loading-modal .dot:nth-child(2) { animation-delay: 0.2s; }
-        #loading-modal .dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes pulse {
-            0%, 100% { transform: scale(0.8); opacity: 0.7; }
-            50% { transform: scale(1.2); opacity: 1; }
-        }
-
-        #sidebar-container {
-            position: relative;
-            transition: min-width 0.3s ease-in-out;
-            min-width: 16rem;
-            width: 16rem;
-            flex-shrink: 0;
-        }
-
-        #sidebar { 
-            transition: transform 0.3s ease-in-out; 
-            background-color: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(5px);
-            border-right: 1px solid rgba(255, 255, 255, 0.3);
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            position: absolute;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-collapsed #sidebar {
-            transform: translateX(-100%);
-        }
-        .sidebar-collapsed #sidebar-container {
-            min-width: 0;
-            width: 0;
-        }
-
-        .ai-message-controls {
-            position: absolute; bottom: 8px; right: 8px;
-            display: flex;
-            gap: 4px;
-        }
-        .control-button {
-            background: #e5e7eb;
-            border-radius: 50%; width: 28px; height: 28px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; border: none;
-            transition: background-color 0.2s;
-        }
-        .control-button:hover { background-color: #d1d5db; }
-
-        #voice-modal { background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); }
-        .voice-wave {
-            width: 80px; height: 80px; border-radius: 50%;
-            background: conic-gradient(#3b82f6 0%, #a855f7 50%, #3b82f6 100%);
-            animation: wave 1.5s linear infinite, pulse-voice 2s infinite ease-in-out;
-            position: relative;
-            display: flex; justify-content: center; align-items: center;
-        }
-        .voice-wave-inner {
-            width: 65px; height: 65px; border-radius: 50%;
-            background-color: #1e3a8a;
-        }
-        @keyframes wave {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        @keyframes pulse-voice {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        #stop-voice-button {
-            background-color: #ef4444; color: white;
-            width: 60px; height: 60px; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            transition: background-color 0.2s, transform 0.2s;
-        }
-        #stop-voice-button:hover { background-color: #dc2626; transform: scale(1.1); }
-        .info-card {
-            background-color: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .info-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 36px 0 rgba(31, 38, 135, 0.15);
-        }
-        .info-card h3 {
-            background: linear-gradient(120deg, #1e3a8a, #2563eb);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .message-content { padding-right: 4.5rem; /* Space for buttons */ }
-        .translate-popup {
-            position: absolute;
-            bottom: 40px;
-            right: 0;
-            background-color: white;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            padding: 4px;
-            animation: popup-fade-in 0.2s ease-out;
-        }
-        @keyframes popup-fade-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .translate-popup button {
-            background: none;
-            border: none;
-            text-align: left;
-            padding: 6px 12px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .translate-popup button:hover { background-color: #f3f4f6; }
-
-        .sidebar-item-menu {
-            display: none;
-            position: absolute;
-            right: 0.5rem;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: rgba(229, 231, 235, 0.8);
-            border-radius: 0.5rem;
-        }
-        .sidebar-item:hover .sidebar-item-menu {
-            display: flex;
-        }
-        .sidebar-item-menu button {
-            background: none;
-            border: none;
-            padding: 0.25rem;
-            cursor: pointer;
-            color: #4b5563;
-        }
-        .sidebar-item-menu button:hover {
-            color: #1d4ed8;
-        }
-
-        #cancel-file-button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0.25rem;
-        }
-         /* Styles for the new dashboard cards */
-        .price-table {
-            width: 100%;
-            margin-top: 1rem;
-            font-size: 0.875rem;
-            text-align: left;
-            color: #374151;
-        }
-        .price-table th, .price-table td {
-            padding: 0.5rem 0.25rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        .price-table th {
-            font-weight: 600;
-            color: #1e3a8a;
-        }
-        .price-table .price {
-            font-weight: 500;
-            color: #166534; /* Green for price */
-            text-align: right;
-        }
-        .pesticide-item {
-            margin-top: 0.75rem;
-        }
-        .pesticide-item strong {
-            color: #1e3a8a;
-        }
+        @keyframes wave { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.5); opacity: 0; } }
+        
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.5); }
     </style>
 </head>
-<body class="p-4">
-    <div class="main-container mx-auto flex gap-4 relative">
-        <div id="sidebar-container">
-            <aside id="sidebar" class="p-4 pl-8 rounded-2xl">
-                 <div class="flex justify-between items-center mb-4 flex-shrink-0">
+<body class="bg-gray-50 h-screen flex overflow-hidden text-gray-800 font-sans selection:bg-kissan-100 selection:text-kissan-900">
 
-                 </div>
-                 <button id="new-chat-button" class="w-full text-left p-3 mb-4 rounded-xl hover:bg-blue-100 font-semibold flex items-center gap-3 text-gray-700 transition-colors flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                    <span data-translate="new_chat">New Chat</span>
-                </button>
-                <div class="relative mb-4 flex-shrink-0">
-                    <input type="text" id="search-chats" data-translate-placeholder="search_placeholder" placeholder="Search..." class="w-full p-2 border rounded-lg text-sm pl-8 focus:ring-2 focus:ring-blue-400 transition">
-                    <svg class="w-4 h-4 absolute top-1/2 left-2.5 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+    <!-- LEFT SIDEBAR: Navigation & History -->
+    <aside id="sidebar-left" class="fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 flex flex-col h-full shadow-2xl lg:shadow-none">
+        <!-- Brand -->
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <div class="flex items-center gap-2.5 font-bold text-xl tracking-tight text-gray-900">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-kissan-500 to-kissan-700 flex items-center justify-center text-white shadow-lg shadow-kissan-500/30">
+                    <i data-lucide="sprout" class="w-5 h-5"></i>
                 </div>
-                <h3 data-translate="recent" class="text-sm font-bold text-gray-500 uppercase px-2 mb-2 flex-shrink-0">Recent</h3>
-                <div id="recent-chats-list" class="flex-1 overflow-y-auto space-y-1"></div>
-            </aside>
+                <span>Kissan<span class="text-kissan-600">AI</span></span>
+            </div>
+            <button onclick="app.toggleLeft()" class="ml-auto lg:hidden text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
-        <button id="sidebar-toggle" class="absolute top-4 left-2 z-30 p-2 rounded-full hover:bg-gray-200 transition-colors">
-             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-        </button>
 
-        <main class="flex-1 flex flex-col md:flex-row gap-4">
-            <div class="flex-1 flex flex-col gap-4">
-                 <div class="flex justify-between items-start">
-                    <div class="text-center md:text-left pl-16">
-                        <h1 class="text-4xl font-bold" data-translate="title" style="background: linear-gradient(120deg, #1e3a8a, #2563eb, #3b82f6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Agri-Assistant</h1>
-                        <p id="user-id" class="text-sm font-medium mt-2 text-gray-500">Connecting...</p>
-                    </div>
-                </div>
-                <div class="chat-container flex flex-col p-4 flex-1 overflow-hidden">
-                    <div id="chat-history" class="flex-1 overflow-y-auto pr-4 mb-4 space-y-4"></div>
-                    <div class="flex items-center space-x-2 border-t pt-4 mt-auto">
-                        <select id="language-select" class="p-2 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-400 transition">
-                            <option value="en-US" data-translate="lang_en">English</option>
-                            <option value="ml-IN" data-translate="lang_ml">മലയാളം</option>
-                            <option value="ta-IN" data-translate="lang_ta">தமிழ்</option>
-                        </select>
-                         <select id="voice-select" title="Voice Mode" class="p-2 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-400 transition"></select>
-                        <input type="text" id="user-input" data-translate-placeholder="type_query_placeholder" placeholder="Type your query..." class="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                        <button id="voice-button" class="p-3 rounded-full hover:bg-blue-100 transition-colors">
-                           <svg class="mic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: #1e40af;"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.5-3c0 3.53-2.64 6.44-6.07 6.94V21h-2.87v-3.06c-3.43-.5-6.07-3.41-6.07-6.94h2c0 2.91 2.37 5.26 5.29 5.26S15.5 13.91 15.5 11h2z"/></svg>
-                        </button>
-                        <button id="send-button" class="btn-primary" style="background: linear-gradient(120deg, #1e40af, #3b82f6); color: #ffffff; padding: 0.75rem 1.5rem; border-radius: 0.75rem;" data-translate="send_button">Send</button>
-                    </div>
-                    <div class="mt-4 flex flex-col md:flex-row items-center gap-4">
-                        <div class="w-full flex items-center gap-2">
-                            <label for="file-upload" id="file-upload-label" data-translate="choose_file" class="cursor-pointer text-sm text-blue-700 font-semibold bg-blue-100 hover:bg-blue-200 text-center p-2 rounded-lg whitespace-nowrap transition-colors">Choose File</label>
-                            <input type="file" id="file-upload" accept="image/*,video/*,audio/*" class="hidden" />
-                            <span id="file-name-display" class="text-sm text-gray-600 truncate"></span>
-                             <button id="cancel-file-button" class="hidden" title="Cancel selection">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-                        <button id="upload-button" class="btn-primary w-full md:w-auto" style="background: linear-gradient(120deg, #166534, #22c55e); color: #ffffff; padding: 0.5rem 1rem; border-radius: 0.5rem;" data-translate="analyze_media_button">Analyze</button>
-                        <button id="delete-chat-button" class="btn-primary w-full md:w-auto" style="background: linear-gradient(120deg, #b91c1c, #ef4444); color: #ffffff; padding: 0.5rem 1rem; border-radius: 0.5rem;" data-translate="delete_chat_button">Delete Chat</button>
-                    </div>
-                </div>
-            </div>
-            <div class="w-full md:w-1/3 flex flex-col gap-4 overflow-y-auto pr-2">
-                <!-- Weather Card -->
-                <div class="info-card bg-white p-4 rounded-2xl text-center">
-                    <p id="location-display" class="font-semibold text-lg text-blue-900 mb-1">Loading location...</p>
-                    <p id="time-display" class="font-bold text-3xl text-blue-800"></p>
-                    <p id="date-display" class="text-sm text-gray-600"></p>
-                    <div id="weather-container" class="mt-4 pt-4 border-t border-gray-200 hidden">
-                         <div class="flex justify-around items-center text-gray-700">
-                             <div class="text-center">
-                                 <div id="weather-icon" class="text-4xl animate-pulse"></div>
-                                 <p id="weather-desc" class="text-sm font-medium"></p>
-                             </div>
-                             <div class="text-center">
-                                 <p class="text-2xl font-bold" id="temp-c-display">--°C</p>
-                                 <p class="text-sm" id="temp-f-display">--°F</p>
-                             </div>
-                             <div class="space-y-1 text-sm text-left">
-                                 <p>💧 <strong data-translate="humidity">Humidity:</strong> <span id="humidity-display">--</span>%</p>
-                                 <p>💨 <strong data-translate="wind">Wind:</strong> <span id="wind-display">--</span> km/h</p>
-                             </div>
-                         </div>
-                         <button id="get-location-button" class="mt-3 text-xs text-blue-600 hover:underline hidden">Allow location access for weather</button>
-                    </div>
-                </div>
-
-                <!-- START: New Market Prices Card -->
-                <div class="info-card p-6 rounded-2xl">
-                    <h3 class="text-xl font-bold mb-2 text-center" data-translate="market_prices_title">Today's Market Prices</h3>
-                    <div id="market-prices-content">
-                        <p class="text-sm text-center text-gray-500">Loading prices...</p>
-                    </div>
-                </div>
-                <!-- END: New Market Prices Card -->
-
-                <!-- START: New Pesticide Info Card -->
-                 <div class="info-card p-6 rounded-2xl">
-                    <h3 class="text-xl font-bold mb-2 text-center" data-translate="pesticide_info_title">Pesticide Info</h3>
-                    <div id="pesticide-info-content">
-                         <p class="text-sm text-center text-gray-500">Loading info...</p>
-                    </div>
-                </div>
-                <!-- END: New Pesticide Info Card -->
-
-                <!-- Terrace Farming Guide Card -->
-                <div class="info-card p-6 rounded-2xl flex flex-col items-center">
-                    <h3 class="text-xl font-bold mb-2 text-center" data-translate="terrace_guide_title">Terrace Farming Guide</h3>
-                    <p class="text-sm text-gray-700 mb-4 text-center" data-translate="terrace_guide_desc">Discover how to create your own lush garden on a rooftop or balcony.</p>
-                    <ul class="text-sm list-disc pl-5 mt-4 text-gray-800 space-y-2">
-                        <li><strong data-translate="sunlight">Sunlight:</strong> <span data-translate="sunlight_desc">Ensure your terrace receives at least 5-6 hours of direct sunlight.</span></li>
-                        <li><strong data-translate="waterproofing">Waterproofing:</strong> <span data-translate="waterproofing_desc">A critical first step to prevent leaks.</span></li>
-                        <li><strong data-translate="potting_mix">Potting Mix:</strong> <span data-translate="potting_mix_desc">Use a lightweight mix to reduce the load on your roof.</span></li>
-                        <li><strong data-translate="plant_selection">Plant Selection:</strong> <span data-translate="plant_selection_desc">Choose vegetables like tomatoes, chili, mint, and spinach.</span></li>
-                        <li><strong data-translate="pest_control">Pest Control:</strong> <span data-translate="pest_control_desc">Use organic methods like neem oil.</span></li>
-                    </ul>
-                </div>
-                
-                <!-- Contact Us Card -->
-                <div class="info-card p-6 rounded-2xl flex flex-col items-center">
-                    <h3 class="text-xl font-bold mb-2 text-center" data-translate="contact_title">Need Help? Contact Us! 💬</h3>
-                    <p class="text-sm text-gray-700 mb-4 text-center" data-translate="contact_desc">For any agricultural queries or support, reach out to us!</p>
-                    <ul class="text-sm list-disc pl-5 mt-4 text-gray-800 space-y-2">
-                        <li><strong data-translate="toll_free">Toll-Free Number:</strong> 1-800-123-4567</li>
-                        <li><strong data-translate="email">Email Address:</strong> support@agri-assistant.com</li>
-                    </ul>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <div id="loading-modal" class="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center hidden z-50">
-        <div class="loader">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-        </div>
-    </div>
-    <div id="custom-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center hidden z-50 p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-sm w-full overflow-hidden transform transition-all animate-fade-in">
-            <div id="modal-header" class="p-4">
-                 <h3 id="modal-title" class="text-xl font-bold text-white text-center"></h3>
-            </div>
-            <div class="p-6 text-center">
-                <p id="modal-message" class="text-gray-700 mb-6"></p>
-                <div class="flex justify-center gap-4">
-                    <button id="modal-cancel-button" class="px-6 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-semibold transition-colors">Cancel</button>
-                    <button id="modal-ok-button" class="px-6 py-2 rounded-lg text-white font-semibold transition-colors btn-primary">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="delete-options-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center hidden z-50 p-4">
-        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center transform transition-all animate-fade-in">
-            <h3 data-translate="delete_options_title" class="text-xl font-bold mb-4">Delete Options</h3>
-            <div class="flex flex-col gap-4">
-                <button id="delete-this-chat-option-button" data-translate="delete_this_chat_button" class="w-full btn-primary" style="background-color: #1e40af; color: #ffffff; padding: 0.5rem 1rem; border-radius: 0.5rem;">Delete This Chat</button>
-                <button id="delete-all-chats-option-button" data-translate="delete_all_chats_button" class="w-full btn-primary" style="background-color: #dc2626; color: #ffffff; padding: 0.5rem 1rem; border-radius: 0.5rem;">Delete All Chats</button>
-                <button id="delete-options-cancel-button" data-translate="cancel_button" class="w-full btn-secondary mt-2" style="background-color: #f3f4f6; color: #1f2937; padding: 0.5rem 1rem; border-radius: 0.5rem;">Cancel</button>
-            </div>
-        </div>
-    </div>
-    <div id="voice-modal" class="fixed inset-0 justify-center items-center hidden z-50">
-        <div class="w-full h-full flex flex-col justify-center items-center relative gap-8">
-            <div class="voice-wave"><div class="voice-wave-inner"></div></div>
-            <p data-translate="voice_listening" class="text-white text-2xl">Listening...</p>
-            <button id="stop-voice-button">
-                 <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+        <!-- New Chat -->
+        <div class="p-4">
+            <button onclick="app.newChat()" class="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-xl font-medium transition-all shadow-md active:scale-95 group">
+                <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform"></i>
+                <span>New Conversation</span>
             </button>
         </div>
+
+        <!-- History List -->
+        <div class="flex-1 overflow-y-auto custom-scroll px-3 py-2 space-y-1" id="chat-list"></div>
+
+        <!-- User Profile / Settings -->
+        <div class="p-4 border-t border-gray-100">
+            <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition cursor-pointer">
+                <div class="w-9 h-9 rounded-full bg-kissan-100 flex items-center justify-center text-kissan-700 font-bold border border-kissan-200">U</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-900 truncate">Farmer User</p>
+                    <p class="text-xs text-green-600 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Pro Plan Active</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col h-full relative min-w-0 bg-white">
+        
+        <!-- Header -->
+        <header class="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+            <div class="flex items-center gap-3">
+                <button onclick="app.toggleLeft()" class="p-2 -ml-2 rounded-lg hover:bg-gray-100 lg:hidden text-gray-600"><i data-lucide="menu" class="w-5 h-5"></i></button>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-semibold text-gray-800 hidden sm:block">Agri Assistant</h1>
+                    <span class="px-2 py-0.5 rounded-full bg-kissan-50 text-kissan-700 text-[10px] font-bold uppercase tracking-wider border border-kissan-100">Gemini 1.5</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <div class="relative hidden sm:block">
+                    <select id="lang-select" onchange="app.setLang(this.value)" class="appearance-none pl-3 pr-8 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-sm font-medium text-gray-700 focus:ring-2 focus:ring-kissan-500 focus:border-transparent cursor-pointer hover:bg-gray-100 transition">
+                        <option value="en-US">English</option>
+                        <option value="ml-IN">Malayalam</option>
+                        <option value="ta-IN">Tamil</option>
+                        <option value="hi-IN">Hindi</option>
+                    </select>
+                    <i data-lucide="globe" class="absolute right-2.5 top-2 w-3.5 h-3.5 text-gray-500 pointer-events-none"></i>
+                </div>
+                <button onclick="app.toggleRight()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500 relative transition-colors">
+                    <i data-lucide="layout" class="w-5 h-5"></i>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Area -->
+        <div id="chat-container" class="flex-1 overflow-y-auto custom-scroll p-4 lg:p-8 scroll-smooth bg-[#fafafa]">
+            <div id="chat-history" class="max-w-3xl mx-auto space-y-6 pb-4">
+                <!-- Messages Injected Here -->
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 lg:p-6 bg-white border-t border-gray-100">
+            <div class="max-w-3xl mx-auto space-y-4">
+                
+                <!-- Quick Actions (Pills) -->
+                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                    <button onclick="app.tool('plan')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 transition whitespace-nowrap"><i data-lucide="calendar" class="w-3 h-3"></i> Crop Plan</button>
+                    <button onclick="app.tool('recipe')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-100 transition whitespace-nowrap"><i data-lucide="utensils" class="w-3 h-3"></i> Recipes</button>
+                    <button onclick="app.tool('pest')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition whitespace-nowrap"><i data-lucide="bug" class="w-3 h-3"></i> Pest ID</button>
+                    <button onclick="app.tool('tip')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-100 transition whitespace-nowrap"><i data-lucide="lightbulb" class="w-3 h-3"></i> Tip</button>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-kissan-500 focus-within:border-transparent">
+                    <textarea id="user-input" rows="1" placeholder="Ask KissanAI anything..." 
+                        class="w-full bg-transparent border-none text-gray-800 placeholder-gray-400 text-sm px-4 py-4 pr-32 focus:ring-0 resize-none max-h-32 rounded-2xl"
+                        onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();app.send()}"></textarea>
+                    
+                    <div class="absolute right-2 bottom-2 flex items-center gap-1">
+                        <button onclick="$('file-upload').click()" class="p-2 text-gray-400 hover:text-kissan-600 hover:bg-kissan-50 rounded-lg transition" title="Attach Image">
+                            <i data-lucide="image-plus" class="w-5 h-5"></i>
+                            <input type="file" id="file-upload" class="hidden" onchange="app.handleFile(this)" accept="image/*">
+                            <span id="file-dot" class="absolute top-2 right-2 w-2 h-2 bg-kissan-500 rounded-full border border-white hidden"></span>
+                        </button>
+                        <button onclick="app.toggleVoice()" class="p-2 text-gray-400 hover:text-kissan-600 hover:bg-kissan-50 rounded-lg transition" title="Voice Input">
+                            <i data-lucide="mic" class="w-5 h-5"></i>
+                        </button>
+                        <button onclick="app.send()" class="p-2 bg-kissan-600 hover:bg-kissan-700 text-white rounded-xl shadow-sm transition-transform active:scale-95">
+                            <i data-lucide="arrow-up" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="file-name" class="text-xs font-medium text-kissan-600 px-2 h-4"></div>
+                <div class="text-center">
+                    <p class="text-[10px] text-gray-400">KissanAI can make mistakes. Consider checking important information.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR: Knowledge Panel (Tools) -->
+    <aside id="sidebar-right" class="fixed inset-y-0 right-0 z-40 w-80 bg-white border-l border-gray-200 transform translate-x-full lg:translate-x-0 transition-transform duration-300 flex flex-col h-full shadow-2xl lg:shadow-none">
+        <div class="h-16 flex items-center justify-between px-6 border-b border-gray-100">
+            <h2 class="font-bold text-gray-800 flex items-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-kissan-500"></i> Tools & Info</h2>
+            <button onclick="app.toggleRight()" class="lg:hidden text-gray-400"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-4 bg-gray-50/50">
+            
+            <!-- Weather Widget -->
+            <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-5 text-white shadow-lg shadow-blue-500/20 relative overflow-hidden group cursor-pointer" onclick="app.getWeather()">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-white/20 transition"></div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-blue-100 text-xs font-semibold uppercase tracking-wider">Live Weather</p>
+                            <h3 id="loc-txt" class="font-bold text-lg mt-0.5 flex items-center gap-1">Detect <i data-lucide="map-pin" class="w-3 h-3"></i></h3>
+                        </div>
+                        <i data-lucide="cloud-sun" class="w-8 h-8 text-blue-100"></i>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <span id="w-temp" class="text-4xl font-bold">--°</span>
+                        <span id="w-desc" class="text-sm text-blue-100 mb-1.5 font-medium capitalize">Unknown</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terrace Farming -->
+            <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-2 mb-2 text-orange-700">
+                    <div class="p-1.5 bg-orange-100 rounded-lg"><i data-lucide="home" class="w-4 h-4"></i></div>
+                    <span class="font-bold text-sm">Terrace Farming</span>
+                </div>
+                <p class="text-xs text-gray-500 mb-3 leading-relaxed">Expert guide to setting up your own organic rooftop garden.</p>
+                <button onclick="app.tool('plan')" class="w-full py-2 text-xs font-bold text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-100 transition">Open Guide</button>
+            </div>
+
+            <!-- Market Prices -->
+            <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                <div class="flex items-center gap-2 mb-3 text-emerald-700">
+                    <div class="p-1.5 bg-emerald-100 rounded-lg"><i data-lucide="trending-up" class="w-4 h-4"></i></div>
+                    <span class="font-bold text-sm">Market Rates</span>
+                </div>
+                <div id="prices-list" class="space-y-2">
+                    <!-- Prices -->
+                </div>
+            </div>
+
+            <!-- Support -->
+            <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                <div class="flex items-center gap-2 mb-3 text-indigo-700">
+                    <div class="p-1.5 bg-indigo-100 rounded-lg"><i data-lucide="life-buoy" class="w-4 h-4"></i></div>
+                    <span class="font-bold text-sm">Farmer Support</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <a href="tel:1800123" class="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-indigo-50 rounded-xl border border-gray-100 transition group text-center">
+                        <i data-lucide="phone" class="w-4 h-4 text-gray-400 group-hover:text-indigo-600 mb-1"></i>
+                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-indigo-700">Call Us</span>
+                    </a>
+                    <a href="mailto:help@kissan.ai" class="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-indigo-50 rounded-xl border border-gray-100 transition group text-center">
+                        <i data-lucide="mail" class="w-4 h-4 text-gray-400 group-hover:text-indigo-600 mb-1"></i>
+                        <span class="text-[10px] font-bold text-gray-600 group-hover:text-indigo-700">Email</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Voice Modal Overlay -->
+    <div id="voice-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex-col items-center justify-center transition-opacity opacity-0">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center text-center max-w-sm mx-4 w-full relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-b from-kissan-50 to-white -z-10"></div>
+            <button onclick="app.stopVoice()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            
+            <div class="w-20 h-20 bg-kissan-100 rounded-full flex items-center justify-center text-kissan-600 mb-6 mic-wave">
+                <i data-lucide="mic" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Listening...</h3>
+            <p class="text-sm text-gray-500 mb-6">Ask me about your crops, weather, or prices.</p>
+            <button onclick="app.stopVoice()" class="w-full py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition">Cancel</button>
+        </div>
     </div>
 
+    <script>
+        const API_KEY = "AIzaSyBmSCkr-MwYJL0D7eDyD9UhsSQmK-AZtZE", MODEL = "gemini-1.5-flash";
+        const $ = id => document.getElementById(id);
+        const ls = localStorage;
+        lucide.createIcons();
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
-        import { getFirestore, collection, doc, addDoc, setDoc, getDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyAgxfqvcE26u5bOOS7snmbKMe1zHoDjp24",
-          authDomain: "agri-ai-friday-d3e1a.firebaseapp.com",
-          projectId: "agri-ai-friday-d3e1a",
-          storageBucket: "agri-ai-friday-d3e1a.firebasestorage.app",
-          messagingSenderId: "967822044561",
-          appId: "1:967822044561:web:3d25728aebea646d547e30",
-          measurementId: "G-YTPW970P8C"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-
-        // --- Global Variables ---
-        const geminiApiKey = "AIzaSyD3F33tYLAlpIQ2g64T2yhCGRm8c5GlU9o";
-        let userId, currentChatId = null, modalAction = null;
-        let localChatHistory = [];
-        let currentUtterance = null;
-        let isVoiceInteraction = false;
-        let speechVoices = [];
-        let chatsUnsubscribe = null;
-
-        // --- Translation Data ---
+        // Localization
         const translations = {
-            'en-US': { title: 'Agri-Assistant', new_chat: 'New Chat', search_placeholder: 'Search...', recent: 'Recent', welcome_message: "Welcome! How can I assist?", type_query_placeholder: 'Type your query...', send_button: 'Send', analyze_media_button: 'Analyze', analyze_image_button: 'Analyze Image', analyze_video_button: 'Analyze Video', analyze_audio_button: 'Analyze Audio', delete_chat_button: 'Delete Chat', terrace_guide_title: 'Terrace Farming Guide', terrace_guide_desc: 'Create your own lush garden on a rooftop.', sunlight: 'Sunlight:', sunlight_desc: 'Ensure 5-6 hours of direct sunlight.', waterproofing: 'Waterproofing:', waterproofing_desc: 'A critical first step to prevent leaks.', potting_mix: 'Potting Mix:', potting_mix_desc: 'Use a lightweight mix to reduce roof load.', plant_selection: 'Plant Selection:', plant_selection_desc: 'Choose vegetables like tomatoes, chili, mint.', pest_control: 'Pest Control:', pest_control_desc: 'Use organic methods like neem oil.', contact_title: 'Need Help? Contact Us! 💬', contact_desc: 'For any agricultural queries, reach out!', toll_free: 'Toll-Free Number:', email: 'Email Address:', delete_options_title: 'Delete Options', delete_this_chat_button: 'Delete This Chat', delete_all_chats_button: 'Delete All Chats', voice_listening: 'Listening...', cancel_button: 'Cancel', ok_button: 'OK', choose_file: 'Choose File', humidity: 'Humidity', wind: 'Wind', lang_en: 'English', lang_ml: 'Malayalam', lang_hi: 'Hindi', lang_ta: 'Tamil', market_prices_title: "Today's Market Prices", pesticide_info_title: "Pesticide Info", market_item_header: "Item", market_price_header: "Price", market_veg_category: "(Veg)", market_fruit_category: "(Fruit)", market_crop_category: "(Crop)", item_tomato: "Tomato", item_onion: "Onion", item_potato: "Potato", item_apple: "Apple", item_banana: "Banana", item_paddy_rice: "Paddy Rice", item_wheat: "Wheat", pesticide_neem_oil: "Neem Oil (Organic)", pesticide_neem_oil_rec: "Effective against aphids, mites. Mix 5ml per liter of water.", pesticide_imidacloprid: "Imidacloprid", pesticide_imidacloprid_rec: "Systemic insecticide for sucking pests like whiteflies. Use as per label." },
-            'ta-IN': { title: 'வேளாண் உதவியாளர்', new_chat: 'புதிய உரையாடல்', search_placeholder: 'தேடு...', recent: 'சமீபத்தியவை', welcome_message: "வணக்கம்! எப்படி உதவட்டும்?", type_query_placeholder: 'உங்கள் வினவலை தட்டச்சு செய்க...', send_button: 'அனுப்பு', analyze_media_button: 'பகுப்பாய்வு செய்', analyze_image_button: 'படத்தை பகுப்பாய்வு செய்', analyze_video_button: 'காணொளியை பகுப்பாய்வு செய்', analyze_audio_button: 'ஒலியை பகுப்பாய்வு செய்', delete_chat_button: 'உரையாடலை நீக்கு', terrace_guide_title: 'மொட்டைமாடி விவசாய வழிகாட்டி', terrace_guide_desc: 'உங்கள் மொட்டை மாடியில் பசுமையான தோட்டத்தை உருவாக்குவது எப்படி.', sunlight: 'சூரிய ஒளி:', sunlight_desc: '5-6 மணிநேர நேரடி சூரிய ஒளி தேவை.', waterproofing: 'நீர்ப்புகாப்பு:', waterproofing_desc: 'கசிவுகளைத் தடுக்க முதல் படி.', potting_mix: 'மண் கலவை:', potting_mix_desc: 'இலகுரக கலவையைப் பயன்படுத்தவும்.', plant_selection: 'தாவரத் தேர்வு:', plant_selection_desc: 'தக்காளி, மிளகாய், புதினா தேர்ந்தெடுக்கவும்.', pest_control: 'பூச்சி கட்டுப்பாடு:', pest_control_desc: 'வேப்பெண்ணெய் போன்ற இயற்கை முறைகளைப் பயன்படுத்தவும்.', contact_title: 'உதவி தேவையா? 💬', contact_desc: 'விவசாய வினவல்களுக்கு, எங்களை அணுகவும்!', toll_free: 'இலவச அழைப்பு எண்:', email: 'மின்னஞ்சல் முகவரி:', delete_options_title: 'நீக்குதல் விருப்பங்கள்', delete_this_chat_button: 'இந்த உரையாடலை நீக்கு', delete_all_chats_button: 'அனைத்து உரையாடல்களையும் நீக்கு', voice_listening: 'கேட்கிறது...', cancel_button: 'ரத்துசெய்', ok_button: 'சரி', choose_file: 'கோப்பைத் தேர்ந்தெடு', humidity: 'ஈரப்பதம்', wind: 'காற்று', lang_en: 'English', lang_ml: 'മലയാളം', lang_hi: 'हिंदी', lang_ta: 'தமிழ்', market_prices_title: "இன்றைய சந்தை விலைகள்", pesticide_info_title: "பூச்சிக்கொல்லி தகவல்", market_item_header: "பொருள்", market_price_header: "விலை", market_veg_category: "(காய்)", market_fruit_category: "(பழம்)", market_crop_category: "(பயிர்)", item_tomato: "தக்காளி", item_onion: "வெங்காயம்", item_potato: "உருளைக்கிழங்கு", item_apple: "ஆப்பிள்", item_banana: "வாழைப்பழம்", item_paddy_rice: "நெல் அரிசி", item_wheat: "கோதுமை", pesticide_neem_oil: "வேப்பெண்ணெய் (இயற்கை)", pesticide_neem_oil_rec: "அசுவினி, சிலந்திகளுக்கு எதிராக பயனுள்ளது. ஒரு லிட்டர் தண்ணீரில் 5ml கலக்கவும்.", pesticide_imidacloprid: "இமிடாகுளோபிரிட்", pesticide_imidacloprid_rec: "வெள்ளை ஈ போன்ற உறிஞ்சும் பூச்சிகளுக்கான அமைப்பு பூச்சிக்கொல்லி. லேபிளின்படி பயன்படுத்தவும்." },
-            'ml-IN': { title: 'അഗ്രി-അസിസ്റ്റന്റ്', new_chat: 'പുതിയ ചാറ്റ്', search_placeholder: 'തിരയുക...', recent: 'സമീപകാലം', welcome_message: "സ്വാഗതം! ഞാനെങ്ങനെ സഹായിക്കേണ്ടു?", type_query_placeholder: 'നിങ്ങളുടെ ചോദ്യം ടൈപ്പ് ചെയ്യുക...', send_button: 'അയയ്ക്കുക', analyze_media_button: 'വിശകലനം ചെയ്യുക', analyze_image_button: 'ചിത്രം വിശകലനം ചെയ്യുക', analyze_video_button: 'വീഡിയോ വിശകലനം ചെയ്യുക', analyze_audio_button: 'ഓഡിയോ വിശകലനം ചെയ്യുക', delete_chat_button: 'ചാറ്റ് ഇല്ലാതാക്കുക', terrace_guide_title: 'ടെറസ് ഫാമിംഗ് ഗൈഡ്', terrace_guide_desc: 'ഒരു മേൽക്കൂരയിൽ നിങ്ങളുടെ സ്വന്തം പൂന്തോട്ടം ഉണ്ടാക്കുക.', sunlight: 'സൂര്യപ്രകാശം:', sunlight_desc: '5-6 മണിക്കൂർ നേരിട്ടുള്ള സൂര്യപ്രകാശം ഉറപ്പാക്കുക.', waterproofing: 'വാട്ടർപ്രൂഫിംഗ്:', waterproofing_desc: 'ചോർച്ച തടയുന്നതിനുള്ള ഒരു നിർണായക ആദ്യപടി.', potting_mix: 'പോട്ടിംഗ് മിശ്രിതം:', potting_mix_desc: 'മേൽക്കൂരയുടെ ഭാരം കുറയ്ക്കാൻ ഭാരം കുറഞ്ഞ മിശ്രിതം ഉപയോഗിക്കുക.', plant_selection: 'ചെടി തിരഞ്ഞെടുക്കൽ:', plant_selection_desc: 'തക്കാളി, മുളക്, പുതിന തുടങ്ങിയ പച്ചക്കറികൾ തിരഞ്ഞെടുക്കുക.', pest_control: 'കീട നിയന്ത്രണം:', pest_control_desc: 'വേപ്പെണ്ണ പോലുള്ള ജൈവ രീതികൾ ഉപയോഗിക്കുക.', contact_title: 'സഹായം വേണോ? ഞങ്ങളെ സമീപിക്കുക! 💬', contact_desc: 'ഏത് കാർഷിക സംശയങ്ങൾക്കും ബന്ധപ്പെടുക!', toll_free: 'ടോൾ ഫ്രീ നമ്പർ:', email: 'ഇമെയിൽ വിലാസം:', delete_options_title: 'ഓപ്ഷനുകൾ ഇല്ലാതാക്കുക', delete_this_chat_button: 'ഈ ചാറ്റ് ഇല്ലാതാക്കുക', delete_all_chats_button: 'എല്ലാ ചാറ്റുകളും ഇല്ലാതാക്കുക', voice_listening: 'കേൾക്കുന്നു...', cancel_button: 'രദ്ദാക്കുക', ok_button: 'ശരി', choose_file: 'ഫയൽ തിരഞ്ഞെടുക്കുക', humidity: 'ഈർപ്പം', wind: 'കാറ്റ്', lang_en: 'English', lang_ml: 'Malayalam', lang_hi: 'Hindi', lang_ta: 'Tamil', market_prices_title: "ഇന്നത്തെ മാർക്കറ്റ് വിലകൾ", pesticide_info_title: "കീടനാശിനി വിവരം", market_item_header: "ഇനം", market_price_header: "വില", market_veg_category: "(പച്ചക്കറി)", market_fruit_category: "(പഴം)", market_crop_category: "(വിള)", item_tomato: "തക്കാളി", item_onion: "സവാള", item_potato: "ഉരുളക്കിഴങ്ങ്", item_apple: "ആപ്പിൾ", item_banana: "വാഴപ്പഴം", item_paddy_rice: "നെല്ല് അരി", item_wheat: "ഗോതമ്പ്", pesticide_neem_oil: "വേപ്പെണ്ണ (ജൈവം)", pesticide_neem_oil_rec: "മുഞ്ഞ, മൈറ്റുകൾ എന്നിവയ്‌ക്കെതിരെ ഫലപ്രദം. ഒരു ലിറ്റർ വെള്ളത്തിൽ 5 മില്ലി കലർത്തുക.", pesticide_imidacloprid: "ഇമിഡാക്ലോപ്രിഡ്", pesticide_imidacloprid_rec: "വെള്ളീച്ച പോലുള്ള നീരൂറ്റുന്ന കീടങ്ങൾക്കുള്ള സിസ്റ്റമിക് കീടനാശിനി. ലേബൽ അനുസരിച്ച് ഉപയോഗിക്കുക." }
+            'en-US': { prices: [{n:'Tomato',p:'₹30'},{n:'Onion',p:'₹25'},{n:'Rice',p:'₹45'}] },
+            'ml-IN': { prices: [{n:'തക്കാളി',p:'₹30'},{n:'സവാള',p:'₹25'},{n:'അരി',p:'₹45'}] },
+            'ta-IN': { prices: [{n:'தக்காளி',p:'₹30'},{n:'வெங்காயம்',p:'₹25'},{n:'அரிசி',p:'₹45'}] },
+            'hi-IN': { prices: [{n:'टमाटर',p:'₹30'},{n:'प्याज',p:'₹25'},{n:'चावल',p:'₹45'}] }
         };
 
-        // --- DOM Elements ---
-        const DOMElements = {
-            body: document.body,
-            mainContainer: document.querySelector('.main-container'),
-            chatHistory: document.getElementById('chat-history'), userInput: document.getElementById('user-input'), sendButton: document.getElementById('send-button'), voiceButton: document.getElementById('voice-button'), languageSelect: document.getElementById('language-select'), voiceSelect: document.getElementById('voice-select'), deleteChatButton: document.getElementById('delete-chat-button'), loadingModal: document.getElementById('loading-modal'), customModal: document.getElementById('custom-modal'), modalTitle: document.getElementById('modal-title'), modalMessage: document.getElementById('modal-message'), modalOkButton: document.getElementById('modal-ok-button'), modalCancelButton: document.getElementById('modal-cancel-button'), newChatButton: document.getElementById('new-chat-button'), recentChatsList: document.getElementById('recent-chats-list'), searchChatsInput: document.getElementById('search-chats'), sidebarToggle: document.getElementById('sidebar-toggle'), sidebarContainer: document.getElementById('sidebar-container'), sidebar: document.getElementById('sidebar'), deleteOptionsModal: document.getElementById('delete-options-modal'), deleteThisChatOptionButton: document.getElementById('delete-this-chat-option-button'), deleteAllChatsOptionButton: document.getElementById('delete-all-chats-option-button'), deleteOptionsCancelButton: document.getElementById('delete-options-cancel-button'), uploadButton: document.getElementById('upload-button'), fileUpload: document.getElementById('file-upload'), timeDisplay: document.getElementById('time-display'), dateDisplay: document.getElementById('date-display'), voiceModal: document.getElementById('voice-modal'), stopVoiceButton: document.getElementById('stop-voice-button'), getLocationButton: document.getElementById('get-location-button'), fileNameDisplay: document.getElementById('file-name-display'),
-            cancelFileButton: document.getElementById('cancel-file-button'),
-            userIdDisplay: document.getElementById('user-id'),
-            locationDisplay: document.getElementById('location-display')
-        };
-
-        // --- UI Functions ---
-        const showLoading = (show) => DOMElements.loadingModal.classList.toggle('hidden', !show);
-        const showModal = (title, message, showCancelButton = false) => {
-            const modalHeader = document.getElementById('modal-header');
-            DOMElements.modalTitle.textContent = title;
-            DOMElements.modalMessage.innerHTML = message; // Use innerHTML to allow links
-            DOMElements.modalCancelButton.style.display = showCancelButton ? 'inline-block' : 'none';
-
-            const isDeleteAction = modalAction && modalAction.toLowerCase().includes('delete');
-
-            if (isDeleteAction) {
-                modalHeader.style.background = 'linear-gradient(120deg, #b91c1c, #ef4444)';
-                DOMElements.modalOkButton.style.background = 'linear-gradient(120deg, #b91c1c, #ef4444)';
-            } else {
-                modalHeader.style.background = 'linear-gradient(120deg, #1e40af, #3b82f6)';
-                DOMElements.modalOkButton.style.background = 'linear-gradient(120deg, #1e40af, #3b82f6)';
-            }
-            DOMElements.customModal.classList.remove('hidden');
-        };
-        const updateLanguage = (lang) => {
-            const langData = translations[lang] || translations['en-US'];
-            document.querySelectorAll('[data-translate]').forEach(el => {
-                const key = el.dataset.translate;
-                if (langData[key]) {
-                     el.textContent = langData[key];
-                }
-            });
-            document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
-                 const key = el.dataset.translatePlaceholder;
-                 if(langData[key]) {
-                    el.placeholder = langData[key];
-                 }
-            });
-            localStorage.setItem('preferredLanguage', lang);
-        };
-        const parseMarkdown = (text) => {
-            let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/### (.*)/g, '<h3>$1</h3>');
-            const listItems = html.match(/^\* (.*)/gm);
-            if (listItems) {
-                html = html.replace(/^\* (.*)/gm, '') + '<ul>' + listItems.map(item => `<li>${item.substring(2)}</li>`).join('') + '</ul>';
-            }
-            return html.replace(/\n/g, '<br>');
-        };
-        const addMessageToChat = (text, sender, mediaUrl = null, mediaType = 'image') => {
-            const messageEl = document.createElement('div');
-            messageEl.classList.add('message-box', sender === 'user' ? 'user-message' : 'ai-message');
-            messageEl.dataset.originalText = text; // Store original text for translation
-
-            let content = sender === 'ai' ? parseMarkdown(text) : `<p>${text}</p>`;
-            let controlsHTML = sender === 'ai' 
-                ? `<div class="ai-message-controls">
-                      <button class="control-button translate-button" title="Translate">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                        </svg>
-                      </button>
-                      <button class="control-button speaker-button" data-text="${encodeURIComponent(text)}" title="Read aloud">
-                         <svg class="play-icon h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
-                         <svg class="stop-icon h-5 w-5 text-gray-600 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5 5h10v10H5V5z" /></svg>
-                      </button>
-                   </div>`
-                : '';
-
-            messageEl.innerHTML = `<strong>${sender === 'user' ? 'You' : 'Agri-Assistant'}:</strong><div class="message-content">${content}</div>${controlsHTML}`;
-
-            if (mediaUrl) {
-                let mediaEl;
-                if (mediaType.startsWith('image')) {
-                    mediaEl = document.createElement('img');
-                } else if (mediaType.startsWith('video')) {
-                    mediaEl = document.createElement('video');
-                    mediaEl.controls = true;
-                } else if (mediaType.startsWith('audio')) {
-                    mediaEl = document.createElement('audio');
-                    mediaEl.controls = true;
-                }
-                mediaEl.src = mediaUrl;
-                mediaEl.classList.add('mt-2', 'rounded-lg', 'max-w-full', 'h-auto', 'max-h-60');
-                messageEl.querySelector('.message-content').appendChild(mediaEl);
-            }
-
-            DOMElements.chatHistory.appendChild(messageEl);
-            DOMElements.chatHistory.scrollTop = DOMElements.chatHistory.scrollHeight;
-        };
-
-        // --- NEW: Function to update dashboard cards ---
-        const updateDashboardCards = () => {
-            const lang = DOMElements.languageSelect.value || 'en-US';
-            const langData = translations[lang] || translations['en-US'];
-
-            // Data with translation keys
-            const marketData = {
-                vegetables: [
-                    { nameKey: 'item_tomato', price: '₹30/kg' },
-                    { nameKey: 'item_onion', price: '₹25/kg' },
-                    { nameKey: 'item_potato', price: '₹20/kg' }
-                ],
-                fruits: [
-                    { nameKey: 'item_apple', price: '₹120/kg' },
-                    { nameKey: 'item_banana', price: '₹40/dz' }
-                ],
-                crops: [
-                     { nameKey: 'item_paddy_rice', price: '₹22/kg' },
-                     { nameKey: 'item_wheat', price: '₹25/kg' }
-                ]
-            };
-
-            const pesticideData = [
-                { nameKey: 'pesticide_neem_oil', price: '₹450/L', recommendationKey: 'pesticide_neem_oil_rec' },
-                { nameKey: 'pesticide_imidacloprid', price: '₹800/L', recommendationKey: 'pesticide_imidacloprid_rec' }
-            ];
-
-            // Populate Market Prices Card
-            const marketContent = document.getElementById('market-prices-content');
-            let marketHTML = `<table class="price-table">
-                <thead><tr><th>${langData.market_item_header}</th><th class="text-right">${langData.market_price_header}</th></tr></thead><tbody>`;
+        const app = {
+            chatId: null, chats: JSON.parse(ls.getItem('kissan_chats') || '{}'), history: [], lang: 'en-US', media: null,
             
-            marketData.vegetables.forEach(item => {
-                marketHTML += `<tr><td>${langData[item.nameKey]} <span class="text-xs text-gray-500">${langData.market_veg_category}</span></td><td class="price">${item.price}</td></tr>`;
-            });
-            marketData.fruits.forEach(item => {
-                marketHTML += `<tr><td>${langData[item.nameKey]} <span class="text-xs text-gray-500">${langData.market_fruit_category}</span></td><td class="price">${item.price}</td></tr>`;
-            });
-             marketData.crops.forEach(item => {
-                marketHTML += `<tr><td>${langData[item.nameKey]} <span class="text-xs text-gray-500">${langData.market_crop_category}</span></td><td class="price">${item.price}</td></tr>`;
-            });
-            marketHTML += `</tbody></table>`;
-            marketContent.innerHTML = marketHTML;
-
-            // Populate Pesticide Info Card
-            const pesticideContent = document.getElementById('pesticide-info-content');
-            let pesticideHTML = '';
-            pesticideData.forEach(item => {
-                pesticideHTML += `<div class="pesticide-item text-sm">
-                    <strong>${langData[item.nameKey]}</strong> - <span class="text-green-700 font-semibold">${item.price}</span>
-                    <p class="text-xs text-gray-600 mt-1">${langData[item.recommendationKey]}</p>
-                </div>`;
-            });
-            pesticideContent.innerHTML = pesticideHTML;
-        };
-
-
-        // --- Real-time Info & Weather ---
-        const updateRealtimeInfo = () => {
-            const now = new Date();
-            const langCode = DOMElements.languageSelect.value;
-            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
-            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-
-            try {
-                 DOMElements.timeDisplay.textContent = new Intl.DateTimeFormat(langCode, timeOptions).format(now);
-                 DOMElements.dateDisplay.textContent = new Intl.DateTimeFormat(langCode, dateOptions).format(now);
-            } catch (e) {
-                console.error("Could not format date/time for locale:", langCode, e);
-                // Fallback to English for unsupported locales
-                DOMElements.timeDisplay.textContent = new Intl.DateTimeFormat('en-US', timeOptions).format(now);
-                DOMElements.dateDisplay.textContent = new Intl.DateTimeFormat('en-US', dateOptions).format(now);
-            }
-        };
-
-        const updateWeatherUI = (data) => {
-            if (!data || !data.description) return;
-            document.getElementById('weather-container').classList.remove('hidden');
-            DOMElements.locationDisplay.textContent = data.locationName || 'Current Location';
-            document.getElementById('weather-icon').textContent = data.icon || '🌡️';
-            document.getElementById('weather-desc').textContent = data.description;
-            document.getElementById('temp-c-display').textContent = `${data.temperatureCelsius}°C`;
-            document.getElementById('temp-f-display').textContent = `${data.temperatureFahrenheit}°F`;
-            document.getElementById('humidity-display').textContent = data.humidity;
-            document.getElementById('wind-display').textContent = data.windSpeed;
-        };
-
-        const fetchWeatherData = async (lat, lon) => {
-            const prompt = `Provide ONLY a JSON object with the current weather for latitude ${lat} and longitude ${lon}, using Google Weather data. The JSON object must have these exact keys: "locationName" (string, e.g., "Mountain View, CA"), "description" (string, e.g., "Sunny"), "temperatureCelsius" (integer), "temperatureFahrenheit" (integer), "humidity" (integer), "windSpeed" (integer, in km/h), and "icon" (a single appropriate emoji, e.g., '☀️', '☁️', '🌧️'). Do not include any other text, markdown formatting, or explanations.`;
-            const payload = { contents: [{ parts: [{ text: prompt }] }] };
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
-
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) {
-                    throw new Error(`Gemini weather fetch failed with status: ${response.status}`);
-                }
-                const result = await response.json();
-                let text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-                 if (!text) {
-                    throw new Error("No text returned from Gemini for weather.");
-                }
-                text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                const weatherData = JSON.parse(text);
-                updateWeatherUI(weatherData);
-            } catch (error) {
-                console.error("Failed to fetch or parse weather data from Gemini:", error);
-                DOMElements.locationDisplay.textContent = "Weather unavailable";
-            }
-        };
-
-        const getWeather = () => {
-             if (navigator.geolocation) {
-                 navigator.geolocation.getCurrentPosition(
-                     async (position) => {
-                         DOMElements.getLocationButton.classList.add('hidden');
-                         await fetchWeatherData(position.coords.latitude, position.coords.longitude);
-                     },
-                     () => {
-                         DOMElements.getLocationButton.classList.remove('hidden');
-                         DOMElements.locationDisplay.textContent = "Location access needed";
-                         console.log("User denied geolocation.");
-                     }
-                 );
-             } else {
-                DOMElements.getLocationButton.classList.remove('hidden');
-                DOMElements.locationDisplay.textContent = "Geolocation not supported";
-                console.log("Geolocation is not supported by this browser.");
-             }
-        };
-
-        // --- Firestore Chat Logic ---
-        const loadRecentChats = () => {
-            if (!userId) return;
-            if (chatsUnsubscribe) chatsUnsubscribe();
-
-            const chatsQuery = query(collection(db, 'users', userId, 'chats'), orderBy('timestamp', 'desc'));
-            chatsUnsubscribe = onSnapshot(chatsQuery, (snapshot) => {
-                DOMElements.recentChatsList.innerHTML = '';
-                snapshot.forEach((doc) => {
-                    const chat = { id: doc.id, ...doc.data() };
-                    const firstMessage = chat.history?.[0]?.text || 'New Chat';
-                    const chatEl = document.createElement('div');
-                    chatEl.className = 'sidebar-item relative group w-full text-left p-2 rounded-lg hover:bg-blue-100 text-sm truncate transition-colors cursor-pointer';
-                    chatEl.innerHTML = `
-                        <span class="chat-title">${firstMessage}</span>
-                        <div class="sidebar-item-menu">
-                            <button class="rename-chat-btn" title="Rename">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                </svg>
+            init() { 
+                this.renderChats(); this.newChat(); this.updateDash(); 
+                if(ls.getItem('last_lang')) { $('lang-select').value = ls.getItem('last_lang'); this.setLang(ls.getItem('last_lang')); }
+                // Auto-detect location if allowed
+                if(navigator.geolocation) this.getWeather(true);
+            },
+            
+            toggleLeft() { $('sidebar-left').classList.toggle('-translate-x-full'); },
+            toggleRight() { $('sidebar-right').classList.toggle('translate-x-full'); $('sidebar-right').classList.toggle('hidden-lg'); },
+            
+            setLang(l) { this.lang = l; ls.setItem('last_lang', l); this.updateDash(); },
+            
+            newChat() {
+                this.chatId = Date.now().toString(); this.history = [];
+                $('chat-history').innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-20 text-center animate-slide-in">
+                        <div class="w-16 h-16 bg-gradient-to-br from-kissan-100 to-kissan-50 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-kissan-100">
+                            <i data-lucide="sprout" class="w-8 h-8 text-kissan-600"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Welcome to KissanAI</h2>
+                        <p class="text-gray-500 max-w-sm text-sm leading-relaxed">Your personal AI agricultural expert. I can analyze plant diseases, suggest crop plans, and provide market insights.</p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-8 max-w-lg w-full px-4">
+                            <button onclick="app.tool('plan')" class="p-3 text-left bg-white border border-gray-100 rounded-xl hover:border-kissan-200 hover:shadow-sm transition text-xs text-gray-600">
+                                <span class="block font-bold text-gray-800 mb-0.5">📅 Crop Plan</span>
+                                Create a schedule for Tomato
                             </button>
-                            <button class="delete-chat-btn" title="Delete">
-                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
-                                </svg>
+                            <button onclick="app.tool('pest')" class="p-3 text-left bg-white border border-gray-100 rounded-xl hover:border-kissan-200 hover:shadow-sm transition text-xs text-gray-600">
+                                <span class="block font-bold text-gray-800 mb-0.5">🐞 Identify Pest</span>
+                                Upload photo or describe pest
                             </button>
                         </div>
-                    `;
-                    chatEl.dataset.chatId = chat.id;
-                    chatEl.addEventListener('click', (e) => {
-                        if (!e.target.closest('button')) loadChatHistory(chat.id);
-                    });
-                    chatEl.querySelector('.delete-chat-btn').addEventListener('click', (e) => {
-                         e.stopPropagation();
-                         modalAction = 'deleteSpecificChat';
-                         DOMElements.modalOkButton.dataset.chatIdToDelete = chat.id;
-                         showModal('Confirm Deletion', `Are you sure you want to delete this chat?`, true);
-                    });
-                     chatEl.querySelector('.rename-chat-btn').addEventListener('click', (e) => {
-                         e.stopPropagation();
-                         const newName = prompt("Enter new name for this chat:", firstMessage);
-                         if (newName && newName.trim() !== "") renameChat(chat.id, newName.trim());
-                    });
+                    </div>`;
+                this.media = null; $('file-dot').classList.add('hidden'); $('file-name').innerText = ''; $('file-upload').value = '';
+                this.renderChats();
+                if(window.innerWidth < 1024) $('sidebar-left').classList.add('-translate-x-full');
+            },
+            
+            loadChat(id) {
+                if(!this.chats[id]) return; this.chatId = id; this.history = this.chats[id].msgs || [];
+                $('chat-history').innerHTML = ''; this.history.forEach(m => this.appendMsg(m.role, m.text, m.img));
+                this.renderChats(); if(window.innerWidth < 1024) $('sidebar-left').classList.add('-translate-x-full');
+            },
+            
+            renderChats() {
+                const list = Object.entries(this.chats).sort((a,b)=>b[1].time-a[1].time);
+                $('chat-list').innerHTML = list.length ? list.map(([id,c])=>
+                    `<div onclick="app.loadChat('${id}')" class="group p-3 rounded-xl cursor-pointer hover:bg-gray-50 flex items-center gap-3 transition-all ${id===this.chatId?'bg-kissan-50 border border-kissan-100':''}">
+                        <i data-lucide="message-square" class="w-4 h-4 ${id===this.chatId?'text-kissan-600':'text-gray-400 group-hover:text-gray-600'}"></i>
+                        <div class="truncate text-sm font-medium flex-1 ${id===this.chatId?'text-kissan-900':'text-gray-600'}">${c.title||'New Chat'}</div>
+                        <button onclick="event.stopPropagation(); app.deleteChat('${id}')" class="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 hover:text-red-500 rounded-lg text-gray-400 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>`).join('') : '<div class="text-center text-xs text-gray-400 mt-10">No recent history</div>';
+                lucide.createIcons();
+            },
+            
+            deleteChat(id) { 
+                if(confirm('Delete this conversation?')) { 
+                    delete this.chats[id || this.chatId]; ls.setItem('kissan_chats', JSON.stringify(this.chats)); 
+                    if(!id || id === this.chatId) this.newChat(); else this.renderChats();
+                } 
+            },
+            
+            handleFile(i) { const f=i.files[0]; if(!f)return; $('file-dot').classList.remove('hidden'); $('file-name').innerText=f.name; const r=new FileReader(); r.onload=e=>this.media={data:e.target.result.split(',')[1],mime:f.type,url:e.target.result}; r.readAsDataURL(f); },
+            
+            appendMsg(role, text, img) {
+                if($('chat-history').innerHTML.includes('Welcome to KissanAI')) $('chat-history').innerHTML = '';
+                const u = role==='user';
+                const html = `
+                    <div class="flex w-full mb-6 ${u?'justify-end':'justify-start'} animate-fade-in group">
+                        <div class="max-w-[85%] lg:max-w-[75%] flex gap-4 ${u?'flex-row-reverse':''}">
+                            <div class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm ${u?'bg-gray-800':'bg-kissan-600'}">
+                                ${u?'U':'<i data-lucide="sprout" class="w-4 h-4"></i>'}
+                            </div>
+                            <div class="flex flex-col gap-1 ${u?'items-end':'items-start'}">
+                                <div class="px-5 py-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${u?'bg-gray-800 text-white rounded-tr-sm':'bg-white text-gray-700 border border-gray-100 rounded-tl-sm'}">
+                                    ${text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>')}
+                                    ${img ? `<img src="${img}" class="mt-3 rounded-lg max-h-56 border border-white/20">` : ''}
+                                </div>
+                                ${!u ? `<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity px-1">
+                                    <button onclick="navigator.clipboard.writeText(\`${text.replace(/"/g, '&quot;')}\`)" class="p-1 text-gray-400 hover:text-kissan-600" title="Copy"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
+                                </div>` : ''}
+                            </div>
+                        </div>
+                    </div>`;
+                $('chat-history').insertAdjacentHTML('beforeend', html); 
+                $('chat-container').scrollTop = $('chat-container').scrollHeight;
+                lucide.createIcons();
+            },
+            
+            async send() {
+                const txt = $('user-input').value.trim(); if(!txt && !this.media) return;
+                $('user-input').value=''; this.history.push({role:'user',text:txt,img:this.media?this.media.url:null});
+                this.appendMsg('user', txt, this.media?this.media.url:null);
+                
+                const loadId = 'l-'+Date.now(); 
+                $('chat-history').insertAdjacentHTML('beforeend', `<div id="${loadId}" class="flex mb-6 gap-4 animate-fade-in"><div class="w-8 h-8 rounded-full bg-kissan-600 flex items-center justify-center text-white"><i data-lucide="sprout" class="w-4 h-4"></i></div><div class="bg-white border border-gray-100 px-5 py-4 rounded-2xl rounded-tl-sm text-gray-500 text-sm shadow-sm flex items-center gap-1">KissanAI is thinking<span class="animate-bounce">.</span><span class="animate-bounce delay-100">.</span><span class="animate-bounce delay-200">.</span></div></div>`); 
+                lucide.createIcons();
+                $('chat-container').scrollTop=$('chat-container').scrollHeight;
 
-                    DOMElements.recentChatsList.appendChild(chatEl);
-                });
-                 if (currentChatId) {
-                    const activeChatEl = DOMElements.recentChatsList.querySelector(`[data-chat-id="${currentChatId}"]`);
-                    if(activeChatEl) activeChatEl.classList.add('bg-blue-200', 'font-semibold');
-                }
-            });
+                try {
+                    const ctx = this.history.slice(-4, -1).map(h=>({role:h.role==='user'?'user':'model',parts:[{text:h.text}]}));
+                    const msg = [{role:'user',parts:[{text:`You are KissanAI, an expert agricultural assistant. Answer in ${this.lang} concisely. Query: ${txt}`}, ...(this.media?[{inlineData:{mimeType:this.media.mime,data:this.media.data}}]:[])]}];
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[...ctx,...msg]})});
+                    const d = await res.json();
+                    $(loadId).remove();
+                    const r = d.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble analyzing that. Please try again.";
+                    this.history.push({role:'model',text:r}); this.appendMsg('model', r);
+                    this.chats[this.chatId] = {title:this.history[0].text.substring(0,30), msgs:this.history, time:Date.now()};
+                    ls.setItem('kissan_chats', JSON.stringify(this.chats)); this.renderChats();
+                    this.media=null; $('file-dot').classList.add('hidden'); $('file-name').innerText=''; $('file-upload').value='';
+                } catch(e) { $(loadId).remove(); this.appendMsg('model', "Network error. Please verify your connection."); }
+            },
+            
+            async tool(t) {
+                const p = t==='plan'?prompt('Enter Crop Name:'):t==='recipe'?prompt('Harvest Item?'):t==='pest'?prompt('Describe Pest:'):'Farming Tip';
+                if(!p) return;
+                const q = t==='plan'?`Detailed crop plan for ${p}`:t==='recipe'?`Cooking recipes for ${p}`:t==='pest'?`Identify pest: ${p}`:`Farming tip`;
+                $('user-input').value = q; this.send();
+            },
+            
+            getWeather(silent=false) {
+                if(!navigator.geolocation) { if(!silent) alert('Enable location'); return; }
+                if(!silent) $('loc-txt').innerHTML = 'Loading...';
+                navigator.geolocation.getCurrentPosition(async pos => {
+                    const {latitude:lat, longitude:lon} = pos.coords;
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:`Return JSON only: weather for lat ${lat} lon ${lon}. Format: {"temp": "25°", "desc": "Sunny", "loc": "City"}`}]}]})});
+                    const d = await res.json();
+                    const w = JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim());
+                    $('loc-txt').innerHTML = `${w.loc} <i data-lucide="map-pin" class="w-3 h-3"></i>`; $('w-temp').innerText = w.temp; $('w-desc').innerText = w.desc;
+                    lucide.createIcons();
+                }, () => $('loc-txt').innerText = "Locate Me");
+            },
+            
+            updateDash() {
+                const d = translations[this.lang] || translations['en-US'];
+                $('prices-list').innerHTML = d.prices.map(p=>`
+                    <div class="flex justify-between items-center p-2.5 rounded-xl bg-gray-50 border border-gray-100 hover:border-kissan-200 transition">
+                        <span class="font-medium text-gray-700 text-xs">${p.n}</span>
+                        <span class="font-bold text-kissan-700 text-xs bg-white border border-kissan-100 px-2 py-0.5 rounded-md shadow-sm">${p.p}</span>
+                    </div>`).join('');
+            },
+            
+            rec: new (window.SpeechRecognition||window.webkitSpeechRecognition)(),
+            toggleVoice() { $('voice-modal').classList.remove('hidden'); setTimeout(()=>$('voice-modal').classList.remove('opacity-0'),10); this.rec.lang=this.lang; this.rec.start(); },
+            stopVoice() { this.rec.stop(); $('voice-modal').classList.add('opacity-0'); setTimeout(()=>$('voice-modal').classList.add('hidden'),300); }
         };
-
-        const startNewChat = () => {
-            currentChatId = null;
-            localChatHistory = [];
-            DOMElements.chatHistory.innerHTML = ''; 
-            const lang = DOMElements.languageSelect.value || 'en-US';
-            addMessageToChat(translations[lang].welcome_message, 'ai');
-            document.querySelectorAll('#recent-chats-list > div').forEach(div => {
-                div.classList.remove('bg-blue-200', 'font-semibold');
-            });
-        };
-
-        const loadChatHistory = async (chatId) => {
-            if (!userId) return;
-            try {
-                const chatRef = doc(db, 'users', userId, 'chats', chatId);
-                const chatSnap = await getDoc(chatRef);
-
-                if (chatSnap.exists()) {
-                    currentChatId = chatId;
-                    localChatHistory = chatSnap.data().history || [];
-                    DOMElements.chatHistory.innerHTML = '';
-                    localChatHistory.forEach(msg => addMessageToChat(msg.text, msg.sender, msg.mediaUrl, msg.mediaType));
-                    document.querySelectorAll('#recent-chats-list > div').forEach(div => {
-                        div.classList.toggle('bg-blue-200', div.dataset.chatId === chatId);
-                        div.classList.toggle('font-semibold', div.dataset.chatId === chatId);
-                    });
-                } else {
-                    console.error("Chat document does not exist!");
-                    startNewChat();
-                }
-            } catch (error) {
-                console.error("Error loading chat: ", error);
-            }
-        };
-
-        const renameChat = async (chatId, newName) => {
-            if (!userId) return;
-            const chatRef = doc(db, 'users', userId, 'chats', chatId);
-            const chatSnap = await getDoc(chatRef);
-            if (chatSnap.exists()) {
-                const history = chatSnap.data().history;
-                if (history && history.length > 0) {
-                    history[0].text = newName;
-                    await updateDoc(chatRef, { history });
-                }
-            }
-        };
-
-        const saveChatHistory = async () => {
-            if (!userId || localChatHistory.length === 0) return;
-
-            try {
-                if (currentChatId) {
-                    const chatRef = doc(db, 'users', userId, 'chats', currentChatId);
-                    await setDoc(chatRef, { 
-                        history: localChatHistory,
-                        timestamp: serverTimestamp() 
-                    }, { merge: true });
-                } else {
-                    const chatsCollection = collection(db, 'users', userId, 'chats');
-                    const newChatRef = await addDoc(chatsCollection, {
-                        history: localChatHistory,
-                        timestamp: serverTimestamp()
-                    });
-                    currentChatId = newChatRef.id;
-                }
-            } catch (error) {
-                console.error("Error saving chat history: ", error);
-                showModal("Error", "Could not save your chat.");
-            }
-        };
-
-        const deleteThisChat = async () => {
-            if (!currentChatId || !userId) return;
-            await deleteSpecificChat(currentChatId);
-        };
-
-        const deleteSpecificChat = async (chatId) => {
-            if (!userId || !chatId) return;
-            showLoading(true);
-            try {
-                await deleteDoc(doc(db, 'users', userId, 'chats', chatId));
-                if (currentChatId === chatId) startNewChat();
-            } catch (error) {
-                console.error("Error deleting chat: ", error);
-            } finally {
-                showLoading(false);
-            }
-        };
-
-        const deleteAllChats = async () => {
-             if (!userId) return;
-             showLoading(true);
-             const chatsQuery = query(collection(db, 'users', userId, 'chats'));
-             const snapshot = await getDocs(chatsQuery);
-             const deletePromises = [];
-             snapshot.forEach(doc => deletePromises.push(deleteDoc(doc.ref)));
-             await Promise.all(deletePromises);
-             startNewChat();
-             showLoading(false);
-        };
-
-
-        const handleApiError = async (response) => {
-            const errorData = await response.json();
-            const errorMessage = errorData.error?.message || 'An unknown error occurred.';
-            showModal("API Error", `An error occurred: ${errorMessage} <br><br> <a href="https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini" target="_blank" class="text-blue-600 underline">Learn More</a>`);
-        };
-
-        // --- Image Generation ---
-        const generateImageForMessage = async (prompt, messageEl) => {
-            const placeholder = document.createElement('div');
-            placeholder.className = 'mt-2 p-4 bg-gray-200 rounded-lg text-center text-sm text-gray-500 animate-pulse';
-            placeholder.textContent = 'Generating image...';
-            messageEl.querySelector('.message-content').appendChild(placeholder);
-
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
-            };
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${geminiApiKey}`;
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) {
-                    placeholder.textContent = 'Image generation failed.';
-                    await handleApiError(response);
-                    return;
-                }
-                const result = await response.json();
-                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-
-                if (base64Data) {
-                    const imageUrl = `data:image/png;base64,${base64Data}`;
-                    const imgEl = document.createElement('img');
-                    imgEl.src = imageUrl;
-                    imgEl.classList.add('mt-2', 'rounded-lg', 'max-w-full', 'h-auto', 'max-h-60');
-                    placeholder.replaceWith(imgEl);
-
-                    if (localChatHistory.length > 0) {
-                        localChatHistory[localChatHistory.length - 1].mediaUrl = imageUrl;
-                        localChatHistory[localChatHistory.length - 1].mediaType = 'image';
-                        saveChatHistory();
-                    }
-                } else {
-                    placeholder.textContent = 'Could not generate image.';
-                }
-            } catch (error) {
-                console.error("Image generation error:", error);
-                placeholder.textContent = 'Image generation error.';
-            }
-        };
-
-        // --- Core API Call Logic ---
-        const handleTextQuery = async (query) => {
-            if (!query.trim()) return;
-
-            localChatHistory.push({ text: query, sender: 'user'});
-            addMessageToChat(query, 'user');
-            await saveChatHistory();
-            showLoading(true);
-
-            const selectedLanguage = DOMElements.languageSelect.options[DOMElements.languageSelect.selectedIndex].text;
-            const langCode = DOMElements.languageSelect.value.split('-')[0];
-
-            const geminiPayload = localChatHistory.map(msg => ({
-                role: msg.sender === 'user' ? 'user' : 'model',
-                parts: [{ text: msg.text }]
-            }));
-
-            const systemPrompt = `You are Friday, an AI Agri-Assistant.
-
-**Core Directives:**
-1.  **Language Constraint:** You MUST ONLY respond to questions asked in the following languages: English, Tamil, Malayalam. If the user's query is in any other language, you MUST respond in ${selectedLanguage} with: "I can only answer questions in English, Tamil, or Malayalam. Please ask your question in one of these languages."
-2.  **Primary Focus & Off-Topic Handling:** Your main expertise is agriculture. If asked a non-agricultural question, provide a brief, accurate answer, and then immediately guide the conversation back to farming. For example: "The capital of France is Paris. Speaking of different regions, are you interested in what crops grow best in a specific climate?"
-3.  **Response Language:** The user's preferred language is **${selectedLanguage}**. Your entire response, including all text and headings, MUST be in **${selectedLanguage}**.
-4.  **No Empty Replies:** You are strictly forbidden from giving empty or incomplete answers. You MUST provide detailed, paragraph-based explanations under each heading you generate. Never return just a heading without text.
-5.  **Formatting:** Use Markdown for clarity (e.g., '### Title', '* ' for list items, '**bold**').
-6.  **Engagement:** End every response with a relevant, open-ended question to encourage further conversation.
-
-**Image Generation (Optional):**
-- If a visual aid would be highly beneficial, add a new line at the very end of your response in this exact format: \`ImagePrompt: [A simple, literal 2-5 word description for the image]\`
-- **Example:** For a query on tomato blight, add: \`ImagePrompt: Tomato plant with blight disease\``;
-
-
-            const payload = { 
-                contents: geminiPayload, 
-                systemInstruction: { parts: [{ text: systemPrompt }] } 
-            };
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
-
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) {
-                    addMessageToChat("Sorry, there was an API error. Please check your connection or API key.", 'ai');
-                    await handleApiError(response);
-                    return;
-                }
-                const result = await response.json();
-                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                const hasContent = text && text.replace(/#+\s*/g, '').replace(/ImagePrompt:.*/i, '').replace(/[\s*#-]/g, '').length > 10;
-
-                if (hasContent) {
-                    let aiResponseText = text;
-                    let imagePrompt = null;
-
-                    const promptRegex = /ImagePrompt:(.*)/i;
-                    const match = text.match(promptRegex);
-                    if (match && match[1]) {
-                        imagePrompt = match[1].trim();
-                        aiResponseText = text.replace(promptRegex, '').trim();
-                    }
-
-                    localChatHistory.push({ text: aiResponseText, sender: 'ai' });
-                    addMessageToChat(aiResponseText, 'ai');
-                    const allMessages = DOMElements.chatHistory.querySelectorAll('.ai-message');
-                    const latestMessageEl = allMessages[allMessages.length - 1];
-
-                    await saveChatHistory();
-
-                    if (imagePrompt && latestMessageEl) {
-                        generateImageForMessage(imagePrompt, latestMessageEl);
-                    }
-
-                    if (isVoiceInteraction) {
-                        speakText(aiResponseText, null);
-                        isVoiceInteraction = false;
-                    }
-                } else { 
-                    addMessageToChat("I'm sorry, I couldn't generate a complete response for that. Could you please try rephrasing your question?", 'ai');
-                    console.error("Received empty or invalid response from API:", result);
-                }
-            } catch (error) { 
-                addMessageToChat("Sorry, an error occurred while processing your request. Please try again.", 'ai');
-                showModal("Error", `Failed to get a response: ${error.message}`);
-            } 
-            finally { showLoading(false); }
-        };
-
-        const handleFileUpload = async (file, base64Data) => { 
-            showLoading(true);
-            const mediaType = file.type;
-            const prompt = `Analyze this agricultural media. Identify any visible plant diseases, pests, or nutrient deficiencies. If a problem is identified, suggest organic and chemical pesticide recommendations with dosages. If it's not an agricultural image, video, or audio file, state that you can only analyze farming-related media. Respond in the language of the user's UI, which is set to ${DOMElements.languageSelect.options[DOMElements.languageSelect.selectedIndex].text}.`;
-
-            localChatHistory.push({ text: `Analyzing media...`, sender: 'user', mediaUrl: base64Data, mediaType: mediaType });
-            addMessageToChat(`Analyzing your ${mediaType.split('/')[0]}...`, 'user', base64Data, mediaType);
-            await saveChatHistory();
-
-            const payload = {
-                contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: mediaType, data: base64Data.split(',')[1] } }] }]
-            };
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
-
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) {
-                    await handleApiError(response);
-                    return;
-                }
-                const result = await response.json();
-                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-                 if (text) {
-                    localChatHistory.push({ text: text, sender: 'ai' });
-                    addMessageToChat(text, 'ai');
-                    await saveChatHistory();
-                 } else { addMessageToChat("Sorry, I could not analyze the media.", 'ai'); }
-            } catch (error) { showModal("Error", `Media analysis failed: ${error.message}`); }
-            finally { showLoading(false); }
-           };
-
-        // --- Voice Synthesis and Recognition ---
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.interimResults = false;
-        recognition.addEventListener('result', e => {
-            DOMElements.voiceModal.classList.add('hidden');
-            handleTextQuery(e.results[0][0].transcript);
-        });
-        recognition.addEventListener('end', () => DOMElements.voiceModal.classList.add('hidden'));
-        recognition.addEventListener('error', (e) => showModal('Voice Error', `Recognition error: ${e.error}`));
-
-        const loadVoices = () => {
-            speechVoices = speechSynthesis.getVoices();
-            DOMElements.voiceSelect.innerHTML = '';
-
-            const funkyNames = ['Sky', 'River', 'Ember', 'Jade', 'Kai', 'Leo', 'Mia', 'Nico', 'Priya', 'Ravi', 'Sona', 'Tia', 'Uma', 'Veda', 'Zoya'];
-            let nameIndex = 0;
-
-            speechVoices
-                .filter(voice => voice.lang.startsWith('en') || voice.lang.startsWith('ta') || voice.lang.startsWith('ml'))
-                .forEach(voice => {
-                    const option = document.createElement('option');
-                    option.textContent = `${funkyNames[nameIndex % funkyNames.length]}`;
-                    option.value = voice.name;
-                    DOMElements.voiceSelect.appendChild(option);
-                    nameIndex++;
-                });
-        };
-
-        const speakText = (text, button) => {
-            if (speechSynthesis.speaking) {
-                speechSynthesis.cancel();
-                if (currentUtterance && button && button.classList.contains('is-playing')) {
-                    return; 
-                }
-            }
-
-            currentUtterance = new SpeechSynthesisUtterance(text);
-
-            let lang = 'en-US'; // Default
-            if (button && button.dataset.lang) {
-                lang = button.dataset.lang;
-            } else if (/[\u0b80-\u0bff]/.test(text)) {
-                lang = 'ta-IN'; // Tamil characters
-            } else if (/[\u0d00-\u0d7F]/.test(text)) {
-                lang = 'ml-IN'; // Malayalam characters
-            }
-
-            currentUtterance.lang = lang;
-
-            const selectedVoiceName = DOMElements.voiceSelect.value;
-            let voice = speechVoices.find(v => v.name === selectedVoiceName && v.lang.startsWith(lang.split('-')[0]));
-
-            if (!voice) {
-                voice = speechVoices.find(v => v.lang.startsWith(lang.split('-')[0]));
-            }
-
-            if (voice) {
-                currentUtterance.voice = voice;
-            } else {
-                 console.warn(`No voice found for language: ${lang}. Using browser default.`);
-            }
-
-            // Reset all icons first
-            document.querySelectorAll('.speaker-button').forEach(btn => {
-                btn.classList.remove('is-playing');
-                btn.querySelector('.play-icon').classList.remove('hidden');
-                btn.querySelector('.stop-icon').classList.add('hidden');
-            });
-
-
-            if(button) {
-                button.classList.add('is-playing');
-                const playIcon = button.querySelector('.play-icon');
-                const stopIcon = button.querySelector('.stop-icon');
-
-                currentUtterance.onstart = () => { 
-                    playIcon.classList.add('hidden'); 
-                    stopIcon.classList.remove('hidden'); 
-                };
-                currentUtterance.onend = () => { 
-                    playIcon.classList.remove('hidden'); 
-                    stopIcon.classList.add('hidden'); 
-                    button.classList.remove('is-playing');
-                    currentUtterance = null; 
-                };
-                currentUtterance.onerror = (e) => { 
-                    console.error("Speech synthesis error:", e);
-                    playIcon.classList.remove('hidden'); 
-                    stopIcon.classList.add('hidden'); 
-                    button.classList.remove('is-playing');
-                    currentUtterance = null; 
-                    showModal("Voice Error", "Sorry, I couldn't play the voice for this language. Your browser may not support it.");
-                };
-            } else {
-                 currentUtterance.onend = () => { currentUtterance = null; };
-                 currentUtterance.onerror = (e) => { 
-                    console.error("Speech synthesis error:", e);
-                    currentUtterance = null; 
-                 };
-            }
-            speechSynthesis.speak(currentUtterance);
-        };
-
-        // --- In-Chat Translation ---
-        const translateMessage = async (messageEl, targetLangCode, targetLangName) => {
-            showLoading(true);
-            const originalText = messageEl.dataset.originalText;
-            const prompt = `Translate the following text to ${targetLangName}. Provide ONLY the translation, with no extra commentary or explanations:\n\n"${originalText}"`;
-
-            const payload = { contents: [{ parts: [{ text: prompt }] }] };
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`;
-
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error('Translation API call failed');
-
-                const result = await response.json();
-                const translatedText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (translatedText) {
-                    const contentDiv = messageEl.querySelector('.message-content');
-                    const speakerButton = messageEl.querySelector('.speaker-button');
-                    const textContainer = contentDiv.querySelector('p, ul, h3') || contentDiv;
-
-                    textContainer.innerHTML = parseMarkdown(translatedText.trim());
-
-                    if (speakerButton) {
-                        speakerButton.dataset.text = encodeURIComponent(translatedText.trim());
-                        speakerButton.dataset.lang = targetLangCode; // Set lang for accurate voice selection
-                    }
-                } else {
-                    showModal("Translation Error", "Could not translate the message.");
-                }
-            } catch (error) {
-                console.error("Translation failed:", error);
-                showModal("Translation Error", `Failed to translate: ${error.message}`);
-            } finally {
-                showLoading(false);
-            }
-        };
-
-        const showLanguageSelector = (button) => {
-            document.querySelectorAll('.translate-popup').forEach(p => p.remove());
-
-            const messageEl = button.closest('.message-box');
-            const popup = document.createElement('div');
-            popup.className = 'translate-popup';
-
-            const languages = [
-                { code: 'en-US', name: 'English' },
-                { code: 'ta-IN', name: 'Tamil' },
-                { code: 'ml-IN', name: 'Malayalam' },
-            ];
-
-            languages.forEach(lang => {
-                const langButton = document.createElement('button');
-                langButton.textContent = lang.name;
-                langButton.onclick = () => {
-                    translateMessage(messageEl, lang.code, lang.name);
-                    popup.remove();
-                };
-                popup.appendChild(langButton);
-            });
-
-            messageEl.appendChild(popup);
-
-            setTimeout(() => {
-                document.addEventListener('click', (e) => {
-                    if (!popup.contains(e.target) && !e.target.closest('.translate-button')) {
-                        popup.remove();
-                    }
-                }, { once: true });
-            }, 0);
-        };
-
-        const resetFileUpload = () => {
-            DOMElements.fileUpload.value = ''; 
-            DOMElements.fileNameDisplay.textContent = ''; 
-            DOMElements.cancelFileButton.classList.add('hidden');
-            const lang = DOMElements.languageSelect.value;
-            const langData = translations[lang] || translations['en-US'];
-            DOMElements.uploadButton.textContent = langData['analyze_media_button'];
-            DOMElements.uploadButton.dataset.translate = 'analyze_media_button';
-        };
-
-        // --- Event Listeners ---
-        DOMElements.sendButton.addEventListener('click', () => { handleTextQuery(DOMElements.userInput.value); DOMElements.userInput.value = ''; });
-        DOMElements.userInput.addEventListener('keypress', (e) => e.key === 'Enter' && DOMElements.sendButton.click());
-
-        DOMElements.fileUpload.addEventListener('change', () => {
-            const file = DOMElements.fileUpload.files[0];
-            const lang = DOMElements.languageSelect.value;
-            const langData = translations[lang] || translations['en-US'];
-
-            if (file) {
-                DOMElements.fileNameDisplay.textContent = file.name;
-                DOMElements.cancelFileButton.classList.remove('hidden');
-                if (file.type.startsWith('image/')) {
-                    DOMElements.uploadButton.textContent = langData['analyze_image_button'];
-                    DOMElements.uploadButton.dataset.translate = 'analyze_image_button';
-                } else if (file.type.startsWith('video/')) {
-                    DOMElements.uploadButton.textContent = langData['analyze_video_button'];
-                     DOMElements.uploadButton.dataset.translate = 'analyze_video_button';
-                } else if (file.type.startsWith('audio/')) {
-                    DOMElements.uploadButton.textContent = langData['analyze_audio_button'];
-                     DOMElements.uploadButton.dataset.translate = 'analyze_audio_button';
-                } else {
-                    DOMElements.uploadButton.textContent = langData['analyze_media_button'];
-                    DOMElements.uploadButton.dataset.translate = 'analyze_media_button';
-                }
-            } else {
-                resetFileUpload();
-            }
-        });
-
-        DOMElements.cancelFileButton.addEventListener('click', resetFileUpload);
-
-        DOMElements.uploadButton.addEventListener('click', () => { 
-            const file = DOMElements.fileUpload.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => handleFileUpload(file, e.target.result);
-                reader.readAsDataURL(file);
-                 resetFileUpload();
-            } else {
-                showModal("No File Selected", "Please choose a file to analyze.");
-            }
-        });
-
-        DOMElements.deleteChatButton.addEventListener('click', () => DOMElements.deleteOptionsModal.classList.remove('hidden'));
-        DOMElements.deleteOptionsCancelButton.addEventListener('click', () => DOMElements.deleteOptionsModal.classList.add('hidden'));
-        DOMElements.deleteThisChatOptionButton.addEventListener('click', () => {
-            DOMElements.deleteOptionsModal.classList.add('hidden');
-            modalAction = 'deleteThisChat';
-            showModal('Confirm Deletion', 'Are you sure you want to delete this chat?', true);
-        });
-        DOMElements.deleteAllChatsOptionButton.addEventListener('click', () => {
-             DOMElements.deleteOptionsModal.classList.add('hidden');
-            modalAction = 'deleteAllChats';
-            showModal('Confirm Deletion', 'Are you sure you want to delete ALL chats?', true);
-        });
-        DOMElements.voiceButton.addEventListener('click', () => {
-            isVoiceInteraction = true;
-            recognition.lang = DOMElements.languageSelect.value;
-            DOMElements.voiceModal.classList.remove('hidden');
-            DOMElements.voiceModal.classList.add('flex');
-            recognition.start();
-        });
-        DOMElements.stopVoiceButton.addEventListener('click', () => recognition.stop());
-        DOMElements.modalOkButton.addEventListener('click', async () => {
-            DOMElements.customModal.classList.add('hidden');
-            if (modalAction === 'deleteThisChat') await deleteThisChat();
-            if (modalAction === 'deleteAllChats') await deleteAllChats();
-            if (modalAction === 'deleteSpecificChat') {
-                const chatId = DOMElements.modalOkButton.dataset.chatIdToDelete;
-                if (chatId) await deleteSpecificChat(chatId);
-            }
-            modalAction = null;
-            delete DOMElements.modalOkButton.dataset.chatIdToDelete;
-        });
-        DOMElements.modalCancelButton.addEventListener('click', () => DOMElements.customModal.classList.add('hidden'));
-        DOMElements.newChatButton.addEventListener('click', startNewChat);
-        DOMElements.sidebarToggle.addEventListener('click', () => DOMElements.mainContainer.classList.toggle('sidebar-collapsed'));
-
-        DOMElements.languageSelect.addEventListener('change', (e) => {
-            updateLanguage(e.target.value);
-            updateRealtimeInfo();
-            updateDashboardCards();
-            startNewChat(); 
-        });
-        DOMElements.chatHistory.addEventListener('click', (e) => {
-            const speakerButton = e.target.closest('.speaker-button');
-            if (speakerButton) {
-                speakText(decodeURIComponent(speakerButton.dataset.text), speakerButton);
-                return;
-            }
-            const translateButton = e.target.closest('.translate-button');
-            if (translateButton) {
-                showLanguageSelector(translateButton);
-            }
-        });
-
-        DOMElements.getLocationButton.addEventListener('click', getWeather);
-
-        DOMElements.searchChatsInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const chatItems = DOMElements.recentChatsList.querySelectorAll('.sidebar-item');
-            chatItems.forEach(item => {
-                const titleEl = item.querySelector('.chat-title');
-                const title = titleEl.dataset.originalTitle || titleEl.textContent;
-                if (!titleEl.dataset.originalTitle) {
-                    titleEl.dataset.originalTitle = title;
-                }
-                const lowerTitle = title.toLowerCase();
-
-                if (lowerTitle.includes(searchTerm) && searchTerm.length > 0) {
-                    item.style.display = 'block';
-                    const regex = new RegExp(`(${searchTerm})`, 'gi');
-                    titleEl.innerHTML = title.replace(regex, '<strong class="font-bold text-blue-700 bg-yellow-200">$1</strong>');
-                } else {
-                    titleEl.innerHTML = title;
-                    item.style.display = 'block';
-                }
-            });
-        });
-
-
-        // --- Initial Page Load ---
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                userId = user.uid;
-                DOMElements.userIdDisplay.textContent = `User ID: ${userId.substring(0,12)}...`;
-
-                const savedLang = localStorage.getItem('preferredLanguage') || 'en-US';
-                DOMElements.languageSelect.value = savedLang;
-                updateLanguage(savedLang);
-                updateRealtimeInfo();
-                setInterval(updateRealtimeInfo, 1000);
-
-                // Call the new function to populate the dashboard cards
-                updateDashboardCards();
-
-                setTimeout(() => {
-                    loadVoices();
-                    if (speechSynthesis.onvoiceschanged !== undefined) {
-                        speechSynthesis.onvoiceschanged = loadVoices;
-                    }
-                }, 500);
-
-                getWeather();
-                loadRecentChats(); 
-                startNewChat();
-            } else {
-                signInAnonymously(auth).catch((error) => {
-                    console.error("Anonymous sign-in failed: ", error);
-                    showModal("Authentication Error", "Could not connect to the service.");
-                });
-            }
-        });
-
+        app.rec.onresult = e => { $('user-input').value = e.results[0][0].transcript; app.stopVoice(); app.send(); };
+        app.init();
     </script>
 </body>
 </html>
-
